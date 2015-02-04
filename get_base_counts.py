@@ -14,12 +14,13 @@ class info:
         self.altalt = altalt        #(1) a different alterate allele was found in the 1000 genomes data
         self.exome = exome          #(1) in WEx data - not sure if this is the whole exome, but within these data we can compare N and S snp freq
         
-#################################'
+#################################
 chr=sys.argv[1]
 person=sys.argv[2]
-variable_site_file=sys.argv[3] # take *.gz
-exome=str(sys.argv[4])
-working_dir = sys.argv[5]
+variable_site_file=sys.argv[3] # should be able to take both gz and unzip
+working_dir = sys.argv[4]
+pileupFile = sys.argv[5]
+exome=str(sys.argv[6])
 
 allcallsdict=dict()     #dict contains dicts of (1)hets, (2)Hr, (3)Ha
 allcallsdict['hets']=dict()         #each dict contains calls as class info
@@ -27,6 +28,7 @@ allcallsdict['homos_ref']=dict()
 allcallsdict['homos_alt']=dict()
 
 #make dictionaries for hr, ha, homo for trio sites    
+print "Parse calls from trio"
 #filein = open('./calls_trio_vcfs/vcf_file_list.txt', 'r')
 filein = open(working_dir+"vcf_file_trio_list.txt", 'r')
 filenames=filein.readlines()
@@ -50,6 +52,7 @@ for filename in filenames:
     vcf.close()
 
 #get single called sites - add to prev dictionary
+print "Parse calls from single"
 #filein = open('./calls_single_vcfs/vcf_file_list.txt', 'r')
 filein = open(working_dir+"vcf_file_single_list.txt", 'r')
 filenames=filein.readlines()
@@ -82,7 +85,7 @@ for filename in filenames:
 
 #go through variable sites file and note variable in each sub-dictionary 
 ## TODO sholud implement a test on file type here, do this later
-print time.time()
+print "Get variable sites"
 ref_data = open(variable_site_file, 'r')
 #ref_data = gzip.open(variable_site_file, 'rb')
 for line in ref_data:      #read line in file
@@ -100,10 +103,12 @@ for line in ref_data:      #read line in file
                 if allcallsdict['homos_alt'][splitline[1]].alt is not splitline[4]:        #check alt allele
                     allcallsdict['homos_alt'][splitline[1]].altalt = 1     
 ref_data.close()
-print time.time() 
+
 #go through exome data and note if found in exome
 if exome is not '0':
-    filein = open('chr'+chr+'Ex_'+person+'.pileups', 'r')        #check if in exome    
+    print "Pares exome file %s" % exome
+    #filein = open('chr'+chr+'Ex_'+person+'.pileups', 'r')        #check if in exome    
+    filein = open(exome, 'r')        #check if in exome    
     for site in filein:
         splitline = site.split()
         if len(splitline)>4:  
@@ -125,17 +130,18 @@ result_dir = working_dir+"base_count/"
 try:
   os.mkdir(result_dir)
 except OSError as e:
-    print e.errno, errno.EEXIST
     if not (e.errno == errno.EEXIST and os.path.isdir(result_dir)):
         raise
 
 for filename in outfilenames:
+    print "Process %s" % filename
     fileout1 = open(result_dir+'base_counts_'+filename+'_'+person+'_flag_filtered.txt','w')
     fileout1.write('pos'+"\t"+'ref'+"\t"+'alt'+"\t"+'As'+"\t"+'Cs'+"\t"+'Gs'+"\t"+'Ts'+"\t"+'callby'+"\t"+'snp'+"\t"+'snpdif'+"\t"+'Ex'+"\n")
     fileout2 = open(result_dir+'base_counts_'+filename+'_'+person+'_byref_flag_filtered.txt','w')
     fileout2.write('pos'+"\t"+'ref'+"\t"+'alt'+"\t"+'refs'+"\t"+'alts'+"\t"+'e1s'+"\t"+'e2s'+"\t"+'callby'+"\t"+'snp'+"\t"+'snpdif'+"\t"+'Ex'+"\n")
     
-    pileups=open('chr'+chr+'_'+person+'.pileups','r')
+    #pileups=open('chr'+chr+'_'+person+'.pileups','r')
+    pileups=open(pileupFile,'r')
     for line in pileups:
         splitline = line.split()
         if len(splitline)>4:            

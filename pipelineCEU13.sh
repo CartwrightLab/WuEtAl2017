@@ -3,9 +3,9 @@
 #this script calls ./check_snps_all.sh and ./check_snps_all_trio.sh and get_base_counts.py but no changes are required to those scripts
 #before using, change lines 6-21 
 
-trioname="CEU11"
-triolocation="/storage/CEUTrio/20110915/"
-trio=('CEUTrio.HiSeq.WGS.b37_decoy.NA12878.clean.dedup.recal.bam' 'CEUTrio.HiSeq.WGS.b37_decoy.NA12891.clean.dedup.recal.bam' 'CEUTrio.HiSeq.WGS.b37_decoy.NA12892.clean.dedup.recal.bam')
+trioname="CEU13"
+triolocation="/storage/CEUTrio/20130906/"
+trio=('NA12878.mapped.ILLUMINA.bwa.CEU.high_coverage_pcr_free.20130906.bam' 'NA12892.mapped.ILLUMINA.bwa.CEU.high_coverage_pcr_free.20130906.bam' 'NA12891.mapped.ILLUMINA.bwa.CEU.high_coverage_pcr_free.20130906.bam')
 trioshorthand=('878' '891' '892')   #kid first
 chromosome="21"
 isOriginalCaller=true #[true|false] # bcftool call:classic mode -c, --consensus-caller  or new mode -m, --multiallelic-caller
@@ -14,8 +14,8 @@ isOriginalCaller=true #[true|false] # bcftool call:classic mode -c, --consensus-
 #variable_site_file="/storage/1kgenomes/ALL.chr21.phase1_release_v3.20101123.snps_indels_svs.genotypes.vcf.gz"
 variable_site_file="/home/steven/Project_MDM/run/ALL.chr21.phase1_release_v3.20101123.snps_indels_svs.genotypes.vcf"
 
-exome=1     #if 1 make sure to input exome file in line 40
-exome_file=CEUTrio.HiSeq.WEx.b37_decoy.NA12878.clean.dedup.recal.bam
+exome=0     #if 1 make sure to input exome file in line 40
+exome_file=0 
 
 ScriptHome="/home/steven/Project_MDM/script/"
 run_check_snps_single="${ScriptHome}check_snps_all.sh"
@@ -27,7 +27,7 @@ python_get_base_counts="${ScriptHome}get_base_counts.py"
 pileupFile="chr${chromosome}_${trioname}_${trioshorthand[0]}.pileups"
 pileupExomeFile="chr${chromosome}Ex_${trioname}_${trioshorthand[0]}.pileups"
 
-parallel_count=1
+parallel_count=2
 #### Steup dir for two different callers
 ##isOriginalCaller [true|false] # bcftools call:classic mode -c, --consensus-caller  or new mode -m, --multiallelic-caller
 
