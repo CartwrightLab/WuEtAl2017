@@ -26,7 +26,7 @@ fi
 
 
 if [ $endpos -gt $startpos ];then
-  ( samtools mpileup -t SP -u -r 21:${startpos}-${endpos} -f /storage/b37_reference/human_g1k_v37.fasta ${infile[0]} | bcftools call -c -> ${outfile} )      #note starting new file
+  ( samtools mpileup -t SP -u -r 21:${startpos}-${endpos} -f /storage/b37_reference/human_g1k_v37.fasta ${infile[0]} | bcftools call ${mode} -> ${outfile} )      #note starting new file
 fi
 
 ##orig

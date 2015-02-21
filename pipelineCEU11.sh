@@ -27,7 +27,7 @@ python_get_base_counts="${ScriptHome}get_base_counts.py"
 pileupFile="chr${chromosome}_${trioname}_${trioshorthand[0]}.pileups"
 pileupExomeFile="chr${chromosome}Ex_${trioname}_${trioshorthand[0]}.pileups"
 
-parallel_count=1
+parallel_count=5
 #### Steup dir for two different callers
 ##isOriginalCaller [true|false] # bcftools call:classic mode -c, --consensus-caller  or new mode -m, --multiallelic-caller
 

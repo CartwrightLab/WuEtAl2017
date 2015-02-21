@@ -9,7 +9,7 @@ trio=('CEUTrio.HiSeq.WGS.b37_decoy.NA12878.clean.dedup.recal.20120117.bam' 'CEUT
 #trio=('CEUTrio.HiSeq.WGS.b37_decoy.NA12878.clean.dedup.recal.bam' 'CEUTrio.HiSeq.WGS.b37_decoy.NA12891.clean.dedup.recal.bam' 'CEUTrio.HiSeq.WGS.b37_decoy.NA12892.clean.dedup.recal.bam')
 trioshorthand=('878' '891' '892')   #kid first
 chromosome="21"
-isOriginalCaller=true #[true|false] # bcftool call:classic mode -c, --consensus-caller  or new mode -m, --multiallelic-caller
+isOriginalCaller=false #[true|false] # bcftool call:classic mode -c, --consensus-caller  or new mode -m, --multiallelic-caller
 
 #variable_site_file=ALL.chr${chromosome}.phase1_release_v3.20101123.snps_indels_svs.genotypes.vcf.gz
 #variable_site_file="/storage/1kgenomes/ALL.chr21.phase1_release_v3.20101123.snps_indels_svs.genotypes.vcf.gz"
@@ -28,7 +28,7 @@ python_get_base_counts="${ScriptHome}get_base_counts.py"
 pileupFile="chr${chromosome}_${trioname}_${trioshorthand[0]}.pileups"
 pileupExomeFile="chr${chromosome}Ex_${trioname}_${trioshorthand[0]}.pileups"
 
-parallel_count=1
+parallel_count=5
 #### Steup dir for two different callers
 ##isOriginalCaller [true|false] # bcftools call:classic mode -c, --consensus-caller  or new mode -m, --multiallelic-caller
 

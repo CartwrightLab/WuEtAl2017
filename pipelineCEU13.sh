@@ -8,7 +8,7 @@ triolocation="/storage/CEUTrio/20130906/"
 trio=('NA12878.mapped.ILLUMINA.bwa.CEU.high_coverage_pcr_free.20130906.bam' 'NA12892.mapped.ILLUMINA.bwa.CEU.high_coverage_pcr_free.20130906.bam' 'NA12891.mapped.ILLUMINA.bwa.CEU.high_coverage_pcr_free.20130906.bam')
 trioshorthand=('878' '891' '892')   #kid first
 chromosome="21"
-isOriginalCaller=true #[true|false] # bcftool call:classic mode -c, --consensus-caller  or new mode -m, --multiallelic-caller
+isOriginalCaller=false #[true|false] # bcftool call:classic mode -c, --consensus-caller  or new mode -m, --multiallelic-caller
 
 #variable_site_file=ALL.chr${chromosome}.phase1_release_v3.20101123.snps_indels_svs.genotypes.vcf.gz
 #variable_site_file="/storage/1kgenomes/ALL.chr21.phase1_release_v3.20101123.snps_indels_svs.genotypes.vcf.gz"
@@ -27,7 +27,7 @@ python_get_base_counts="${ScriptHome}get_base_counts.py"
 pileupFile="chr${chromosome}_${trioname}_${trioshorthand[0]}.pileups"
 pileupExomeFile="chr${chromosome}Ex_${trioname}_${trioshorthand[0]}.pileups"
 
-parallel_count=2
+parallel_count=3
 #### Steup dir for two different callers
 ##isOriginalCaller [true|false] # bcftools call:classic mode -c, --consensus-caller  or new mode -m, --multiallelic-caller
 
