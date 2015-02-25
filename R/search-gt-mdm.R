@@ -91,8 +91,8 @@ message(sprintf("Searching for maximum likelihood of %d-component model....",k))
 message(sprintf("Using%s data with %dx to %dx coverage....",
 	(if(dirty_data) " dirty" else ""), lowerLimit, upperLimit))
 
-ofile <- sprintf((if(dirty_data) "gt_mdm_%dd_results_%d.RData" else 
-	"gt_mdm_%s_%d_results_%d.RData"),sub_name, k, pid)
+ofile <- sprintf(  
+	"gt_mdm_%s_%d%s_results_%d.RData",sub_name, k, if(dirty_data) "D" else "", pid)
 
 res <- fitmdm.mle.many(x,nn,k)
 ll <- sapply(res,function(x) x$ll)

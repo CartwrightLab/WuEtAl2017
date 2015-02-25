@@ -15,13 +15,17 @@ else
 	PWD=`pwd`
 fi
 
+if [ $1 -eq "D" | $1 -eq "d" ]
+then
+	isDirty="d"
+fi
 
 MdmFile="${PWD}/mdm.R"
 GtMdm="${PWD}/search-gt-mdm.R"
 echo $Orig
 echo $PWD
 
-NumTrial=2
+numTrial=20
 
 if [ ! -e "mdm.R" ] 
 then
@@ -39,7 +43,7 @@ do
 	for numCom in $(seq 1 6)
 	do
 #		echo $f $numCom
-		Rscript search-gt-mdm.R ${NumTrial} $numCom $f
+		Rscript search-gt-mdm.R ${numTrial} ${numCom}${isDirty} $f
 	done
 	
 
