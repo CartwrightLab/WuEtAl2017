@@ -15,9 +15,12 @@ else
 	PWD=`pwd`
 fi
 
-if [ $1 -eq "D" | $1 -eq "d" ]
+if [ $# -eq 1 ] 
 then
-	isDirty="d"
+	if [ "$1" == "D" | "$1" == "d" ]
+	then
+		isDirty="d"
+	fi
 fi
 
 MdmFile="${PWD}/mdm.R"
@@ -37,12 +40,12 @@ then
 	ln -sf $GtMdm .
 fi
 
-Files=`ls | grep byref`
+Files=`ls | grep *hets*byref*`
 for f in ${Files}
 do
 	for numCom in $(seq 1 6)
 	do
-#		echo $f $numCom
+		echo $f $numCom
 		Rscript search-gt-mdm.R ${numTrial} ${numCom}${isDirty} $f
 	done
 	
