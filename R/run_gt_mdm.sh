@@ -13,7 +13,7 @@ else
 	PWD=`pwd`
 fi
 echo $1 $#
-if [[ $# -eq 1  &&  $1 == "D" || $1 == "d" ]]
+if [ $# -eq 1 ]  && [ $1 == "D" ] || [ $1 == "d" ]]
 then
 	echo $1
 	isDirty="d"
