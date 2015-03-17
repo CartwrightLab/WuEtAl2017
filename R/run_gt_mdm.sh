@@ -4,6 +4,8 @@
 #base_counts_homos_alt_CEU10_878_byref_flag_filtered.txt
 
 
+numTrial=1000
+
 if [ -h $0 ]
 then
 	Orig=`readlink $0`
@@ -24,7 +26,6 @@ GtMdm="${PWD}/search-gt-mdm.R"
 echo $Orig
 echo $PWD
 
-numTrial=20
 
 if [ ! -e "mdm.R" ] 
 then
