@@ -43,7 +43,7 @@ do
 	for numCom in $(seq 1 6)
 	do
 		echo "$f ${numTrial} ${numCom}${isDirty}"
-		Rscript search-gt-mdm.R ${numTrial} ${numCom}${isDirty} $f
+		#Rscript search-gt-mdm.R ${numTrial} ${numCom}${isDirty} $f
 	done
 	
 
