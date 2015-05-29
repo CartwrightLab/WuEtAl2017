@@ -8,7 +8,7 @@
 ScriptHome="/home/steven/Project_MDM/MiDiMu/snps/"
 
 trioname="CEU13"
-chromosome=10
+chromosome=21
 
 parallel_count=20
 

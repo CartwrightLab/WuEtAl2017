@@ -88,14 +88,14 @@ fi
 ####get trio calls - script for parallel
 echo "===== Check SNPS Trio ====="
 
-cat ${SplitFile} |  parallel -j ${parallel_count} ${run_check_snps_trio} {} ${isOriginalCaller} ${callsTrioDir}
+cat ${SplitFile} |  parallel -j ${parallel_count} ${run_check_snps_trio} ${chromosome} {} ${isOriginalCaller} ${callsTrioDir}
 #cat ${SplitFile}_test | xargs -I input ./check_snps_all_trio.sh input isOriginalCaller
 
 
 ####get single calls - script for parallel
 echo "===== Check SNPS Single ====="
 
-cat ${SplitFile} | parallel -j ${parallel_count} ${run_check_snps_single} {} ${isOriginalCaller} ${callsSingleDir}
+cat ${SplitFile} | parallel -j ${parallel_count} ${run_check_snps_single} ${chromosome} {} ${isOriginalCaller} ${callsSingleDir}
 #cat ${SplitFile} | parallel -j ${parallel_count} ./check_snps_all.sh {} ${isOriginalCaller} ${callsSingleDir}
 
 ####get list of all vcf files
@@ -107,7 +107,7 @@ ls ${callsTrioDir}[1-9]*_trio.vcf > ${workingDir}vcf_file_trio_list.txt
 #### get all pileups. Reuse pileups for different bcftools mode
 if [ ! -e ${pileupFile} ];then
     echo "===== Create mpileup ======"
-    samtools mpileup -r ${chromosome} -f /storage/b37_reference/human_g1k_v37.fasta ${triolocation}${trio[0]} > ${pileupFile} 
+    samtools mpileup -r ${chromosome} -f /storage/reference_genomes/human/1k_genomes_phase1/human_g1k_v37.fasta ${triolocation}${trio[0]} > ${pileupFile} 
 fi
 
 
@@ -115,7 +115,7 @@ fi
 if [ $exome -eq 1 ];then
     if [ ! -e ${pileupExomeFile} ];then
         echo "===== Create mpileup exome ======"
-        samtools mpileup -r ${chromosome} -f /storage/b37_reference/human_g1k_v37.fasta ${triolocation}${exome_file} >  ${pileupExomeFile}    
+        samtools mpileup -r ${chromosome} -f /storage/reference_genomes/human/1k_genomes_phase1/human_g1k_v37.fasta ${triolocation}${exome_file} >  ${pileupExomeFile}    
 fi
 fi
 

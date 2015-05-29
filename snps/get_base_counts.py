@@ -28,7 +28,7 @@ allcallsdict['homos_ref']=dict()
 allcallsdict['homos_alt']=dict()
 
 #make dictionaries for hr, ha, homo for trio sites    
-print "Parse calls from trio"
+print ("Parse calls from trio")
 #filein = open('./calls_trio_vcfs/vcf_file_list.txt', 'r')
 filein = open(working_dir+"vcf_file_trio_list.txt", 'r')
 filenames=filein.readlines()
@@ -52,7 +52,7 @@ for filename in filenames:
     vcf.close()
 
 #get single called sites - add to prev dictionary
-print "Parse calls from single"
+print("Parse calls from single")
 #filein = open('./calls_single_vcfs/vcf_file_list.txt', 'r')
 filein = open(working_dir+"vcf_file_single_list.txt", 'r')
 filenames=filein.readlines()
@@ -85,7 +85,7 @@ for filename in filenames:
 
 #go through variable sites file and note variable in each sub-dictionary 
 ## TODO sholud implement a test on file type here, do this later
-print "Get variable sites"
+print("Get variable sites")
 ref_data = open(variable_site_file, 'r')
 #ref_data = gzip.open(variable_site_file, 'rb')
 for line in ref_data:      #read line in file
@@ -106,7 +106,7 @@ ref_data.close()
 
 #go through exome data and note if found in exome
 if exome is not '0':
-    print "Pares exome file %s" % exome
+    print ("Pares exome file %s" % exome)
     #filein = open('chr'+chr+'Ex_'+person+'.pileups', 'r')        #check if in exome    
     filein = open(exome, 'r')        #check if in exome    
     for site in filein:
@@ -134,7 +134,7 @@ except OSError as e:
         raise
 
 for filename in outfilenames:
-    print "Process %s" % filename
+    print ("Process %s" % filename)
     fileout1 = open(result_dir+'base_counts_'+filename+'_'+person+'_flag_filtered.txt','w')
     fileout1.write('pos'+"\t"+'ref'+"\t"+'alt'+"\t"+'As'+"\t"+'Cs'+"\t"+'Gs'+"\t"+'Ts'+"\t"+'callby'+"\t"+'snp'+"\t"+'snpdif'+"\t"+'Ex'+"\n")
     fileout2 = open(result_dir+'base_counts_'+filename+'_'+person+'_byref_flag_filtered.txt','w')

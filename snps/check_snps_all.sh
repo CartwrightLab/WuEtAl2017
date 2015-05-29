@@ -1,14 +1,16 @@
 #/bin/sh
+chromosome=$1
+line=$2     #range in chromosome
+isOriginalCaller=$3
+outfileDir=$4
 
-line=$1     #range in chromosome
-isOriginalCaller=$2
-outfileDir=$3
-
+#echo "$1 $2 $3 $4"
 set -- $line
 startpos=$1
 endpos=$2
 infile=($3$4 $3$5 $3$6) #child parent1 parent2
-
+#echo "$endpos $startpos"
+#echo "$1 $2 $3 $4"
 if $isOriginalCaller; then
   mode="-c" #-c, --consensus-caller	bcftools
 else
@@ -18,15 +20,15 @@ fi
 outfile="${outfileDir}${startpos}_single.vcf"
 [ -e $outfile ] && lastline=`tail -1 ${outfile}` || lastline='1 1'  #check for restarting - if so get last line of vcf file otherwise use a pretend line
 set -- $lastline        
-if [ "$2" -gt "$startpos" ];then    #get last position tested
+if [[ $2 -gt $startpos ]];then    #get last position tested
 #    echo "reset $startpos to $2+1 END:$endpos"
     startpos=$(($2+1)) #start with +1 position, got result from this position already
     outfile="${outfileDir}${startpos}_single.vcf"
 fi
 
-
+echo "Still got chromosame? ${chromosome}"
 if [ $endpos -gt $startpos ];then
-  ( samtools mpileup -t SP -u -r 21:${startpos}-${endpos} -f /storage/b37_reference/human_g1k_v37.fasta ${infile[0]} | bcftools call ${mode} -> ${outfile} )      #note starting new file
+  ( samtools mpileup -t SP -u -r ${chromosome}:${startpos}-${endpos} -f /storage/reference_genomes/human/1k_genomes_phase1/human_g1k_v37.fasta ${infile[0]} | bcftools call ${mode} -> ${outfile} )      #note starting new file
 fi
 
 ##orig
