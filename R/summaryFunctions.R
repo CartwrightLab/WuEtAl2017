@@ -73,7 +73,27 @@ parseData<- function(dat, lowerLimit, upperLimit, dirtyData){
 	return(dataRef)
 }
 
-	
+
+getMaxLikelihoodProp<- function(maxLikelihoodList){
+	result<- sapply(maxLikelihoodList, function(x){
+				prop <- table(apply(x,1,which.max))
+				return(prop/sum(prop))
+			})
+	return(result)
+}
+
+
+parseDataFP<- function(dat, lowerLimit, upperLimit){
+	dataRef <- cbind(dat$refs,dat$alts,dat$e1s+dat$e2s)
+	dataRef <- data.matrix(dataRef)
+	row.names(dataRef) <- dat$pos
+	dataRef <- dataRef[dat$callby == 2 & dat$snp == 0, ]
+	n <- rowSums(dataRef)
+	oo <- lowerLimit <= n & n <= upperLimit
+	dataRef <- dataRef[oo,]
+	n <- n[oo]
+	return(dataRef)
+}
 	
 	
 	
