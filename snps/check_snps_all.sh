@@ -26,7 +26,7 @@ if [[ $2 -gt $startpos ]];then    #get last position tested
     outfile="${outfileDir}${startpos}_single.vcf"
 fi
 
-echo "Still got chromosame? ${chromosome}"
+#echo "Still got chromosame? ${chromosome}"
 if [ $endpos -gt $startpos ];then
   ( samtools mpileup -t SP -u -r ${chromosome}:${startpos}-${endpos} -f /storage/reference_genomes/human/1k_genomes_phase1/human_g1k_v37.fasta ${infile[0]} | bcftools call ${mode} -> ${outfile} )      #note starting new file
 fi

@@ -36,14 +36,14 @@ pileupExomeFile="chr${chromosome}Ex_${trioname}_${trioshorthand[0]}.pileups"
 ##isOriginalCaller [true|false] # bcftools call:classic mode -c, --consensus-caller  or new mode -m, --multiallelic-caller
 
 if $isOriginalCaller;then
-  echo "===== bcftools original mode ====="
-  workingDir="${workingDir}/original/"
+echo "===== bcftools original mode ====="
+workingDir="${workingDir}/original/"
 else
-  echo "===== bcftools multiallec mode ====="
-  workingDir="${workingDir}/multiallelic/"
+echo "===== bcftools multiallec mode ====="
+workingDir="${workingDir}/multiallelic/"
 fi
 if [ ! -d $workingDir ];then
-  mkdir $workingDir
+mkdir $workingDir
 fi
 
 SplitFile="${workindDir}splitchr${chromosome}.split"
@@ -76,11 +76,11 @@ callsTrioDir="${workingDir}calls_trio_vcfs/"
 callsSingleDir="${workingDir}calls_single_vcfs/"
 
 if [ ! -d ${callsTrioDir} ]; then
-  mkdir ${callsTrioDir}
+mkdir ${callsTrioDir}
 fi
 
 if [ ! -d ${callsSingleDir} ]; then
-  mkdir ${callsSingleDir}
+mkdir ${callsSingleDir}
 fi
 
 #### In parallel, {} means input line. man parallel
@@ -106,25 +106,28 @@ ls ${callsTrioDir}[1-9]*_trio.vcf > ${workingDir}vcf_file_trio_list.txt
 
 #### get all pileups. Reuse pileups for different bcftools mode
 if [ ! -e ${pileupFile} ];then
-    echo "===== Create mpileup ======"
-    samtools mpileup -r ${chromosome} -f /storage/reference_genomes/human/1k_genomes_phase1/human_g1k_v37.fasta ${triolocation}${trio[0]} > ${pileupFile} 
+echo "===== Create mpileup ======"
+samtools mpileup -r ${chromosome} -f /storage/reference_genomes/human/1k_genomes_phase1/human_g1k_v37.fasta ${triolocation}${trio[0]} > ${pileupFile} 
 fi
 
 
 #### get all exome pileups. Reuse pileups for different bcftools mode
 if [ $exome -eq 1 ];then
-    if [ ! -e ${pileupExomeFile} ];then
-        echo "===== Create mpileup exome ======"
-        samtools mpileup -r ${chromosome} -f /storage/reference_genomes/human/1k_genomes_phase1/human_g1k_v37.fasta ${triolocation}${exome_file} >  ${pileupExomeFile}    
+if [ ! -e ${pileupExomeFile} ];then
+echo "===== Create mpileup exome ======"
+samtools mpileup -r ${chromosome} -f /storage/reference_genomes/human/1k_genomes_phase1/human_g1k_v37.fasta ${triolocation}${exome_file} >  ${pileupExomeFile}    
 fi
 fi
 
 ### sort hets and homos and use list of hets to get counts for those sites - for all trio and single calls, flags prev found as variable, exome
 if [ $exome -eq 1 ];then
-    python ${python_get_base_counts} ${chromosome} "${trioname}_${trioshorthand[0]}" ${variable_site_file} ${workingDir} ${pileupFile} ${pileupExomeFile}
+python2 ${python_get_base_counts} ${chromosome} "${trioname}_${trioshorthand[0]}" ${variable_site_file} ${workingDir} ${pileupFile} ${pileupExomeFile}
 else
-    python ${python_get_base_counts} ${chromosome} "${trioname}_${trioshorthand[0]}" ${variable_site_file} ${workingDir} ${pileupFile} 0
+python2 ${python_get_base_counts} ${chromosome} "${trioname}_${trioshorthand[0]}" ${variable_site_file} ${workingDir} ${pileupFile} 0
 fi
+
+# samtools mpileup -r 10 -f /storage/reference_genomes/human/1k_genomes_phase1/human_g1k_v37.fasta /storage/CEUTrio/20130906/NA12878.mapped.ILLUMINA.bwa.CEU.high_coverage_pcr_free.20130906.bam > chr10_CEU13_878.pileups
+# python2 get_base_counts.py 10 CEU13_878 /storage/StevenStorage/CEU/ALL.chr${chromosome}.integrated_phase1_v3.20101123.snps_indels_svs.genotypes.vcf ~/Project_MDM/CEU/CEU13_C10/original/ chr10_CEU13_878.pileups 0
 
 
 #remove vcf files
