@@ -86,8 +86,8 @@ for filename in filenames:
 #go through variable sites file and note variable in each sub-dictionary 
 ## TODO sholud implement a test on file type here, do this later
 print("Get variable sites")
-ref_data = open(variable_site_file, 'r')
-#ref_data = gzip.open(variable_site_file, 'rb')
+#ref_data = open(variable_site_file, 'r')
+ref_data = gzip.open(variable_site_file, 'rb')
 for line in ref_data:      #read line in file
     if line.startswith(chr):            #skip all initial info lines
         splitline=line.split()
@@ -140,8 +140,9 @@ for filename in outfilenames:
     fileout2 = open(result_dir+'base_counts_'+filename+'_'+person+'_byref_flag_filtered.txt','w')
     fileout2.write('pos'+"\t"+'ref'+"\t"+'alt'+"\t"+'refs'+"\t"+'alts'+"\t"+'e1s'+"\t"+'e2s'+"\t"+'callby'+"\t"+'snp'+"\t"+'snpdif'+"\t"+'Ex'+"\n")
     
-    #pileups=open('chr'+chr+'_'+person+'.pileups','r')
-    pileups=open(pileupFile,'r')
+    # pileups=open('chr'+chr+'_'+person+'.pileups','r')
+    # pileups=open(pileupFile,'r')
+    pileups = gzip.open(fileupFile, 'rb')
     for line in pileups:
         splitline = line.split()
         if len(splitline)>4:            

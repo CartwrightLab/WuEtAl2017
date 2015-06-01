@@ -8,7 +8,7 @@
 ScriptHome="/home/steven/Project_MDM/MiDiMu/snps/"
 
 trioname="CEU13"
-chromosome=10
+chromosome=21
 
 parallel_count=20
 
@@ -27,7 +27,7 @@ fi
 
 
 ## VCF
-variable_site_file="/storage/StevenStorage/CEU/ALL.chr${chromosome}.integrated_phase1_v3.20101123.snps_indels_svs.genotypes.vcf"
+variable_site_file="/storage/StevenStorage/CEU/ALL.chr${chromosome}.integrated_phase1_v3.20101123.snps_indels_svs.genotypes.vcf.gz"
 
 
 ## FIX setting

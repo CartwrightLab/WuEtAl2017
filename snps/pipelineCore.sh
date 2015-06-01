@@ -48,6 +48,7 @@ fi
 
 SplitFile="${workindDir}splitchr${chromosome}.split"
 
+##### START #####
 ####make a list to split up the chromosome for parallel runs
 firstline=`samtools view ${triolocation}${trio[0]} ${chromosome}${chromosomePosition} | head -1`
 set -- $firstline
@@ -89,14 +90,14 @@ fi
 echo "===== Check SNPS Trio ====="
 
 cat ${SplitFile} |  parallel -j ${parallel_count} ${run_check_snps_trio} ${chromosome} {} ${isOriginalCaller} ${callsTrioDir}
-#cat ${SplitFile}_test | xargs -I input ./check_snps_all_trio.sh input isOriginalCaller
+###cat ${SplitFile}_test | xargs -I input ./check_snps_all_trio.sh input isOriginalCaller
 
 
 ####get single calls - script for parallel
 echo "===== Check SNPS Single ====="
 
 cat ${SplitFile} | parallel -j ${parallel_count} ${run_check_snps_single} ${chromosome} {} ${isOriginalCaller} ${callsSingleDir}
-#cat ${SplitFile} | parallel -j ${parallel_count} ./check_snps_all.sh {} ${isOriginalCaller} ${callsSingleDir}
+###cat ${SplitFile} | parallel -j ${parallel_count} ./check_snps_all.sh {} ${isOriginalCaller} ${callsSingleDir}
 
 ####get list of all vcf files
 ls ${callsSingleDir}[1-9]*_single.vcf > ${workingDir}vcf_file_single_list.txt
@@ -105,25 +106,30 @@ ls ${callsTrioDir}[1-9]*_trio.vcf > ${workingDir}vcf_file_trio_list.txt
 
 
 #### get all pileups. Reuse pileups for different bcftools mode
-if [ ! -e ${pileupFile} ];then
-echo "===== Create mpileup ======"
-samtools mpileup -r ${chromosome} -f /storage/reference_genomes/human/1k_genomes_phase1/human_g1k_v37.fasta ${triolocation}${trio[0]} > ${pileupFile} 
+
+if [[ ! ( -e ${pileupFile}  || -e ${pileupFile}.gz ) ]]; then
+    echo "===== Create mpileup ======"
+    samtools mpileup -r ${chromosome} -f /storage/reference_genomes/human/1k_genomes_phase1/human_g1k_v37.fasta ${triolocation}${trio[0]} > ${pileupFile} 
+    gzip ${pileupFile}
+else
+    echo "FOUND ${pileupFile}.gz"
 fi
 
 
 #### get all exome pileups. Reuse pileups for different bcftools mode
 if [ $exome -eq 1 ];then
-if [ ! -e ${pileupExomeFile} ];then
+if [ ! -e ${pileupExomeFile}.gz ];then
 echo "===== Create mpileup exome ======"
 samtools mpileup -r ${chromosome} -f /storage/reference_genomes/human/1k_genomes_phase1/human_g1k_v37.fasta ${triolocation}${exome_file} >  ${pileupExomeFile}    
+gzip ${pileupExomeFile}.gz
 fi
 fi
 
 ### sort hets and homos and use list of hets to get counts for those sites - for all trio and single calls, flags prev found as variable, exome
 if [ $exome -eq 1 ];then
-python2 ${python_get_base_counts} ${chromosome} "${trioname}_${trioshorthand[0]}" ${variable_site_file} ${workingDir} ${pileupFile} ${pileupExomeFile}
+python2 ${python_get_base_counts} ${chromosome} "${trioname}_${trioshorthand[0]}" ${variable_site_file} ${workingDir} ${pileupFile}.gz ${pileupExomeFile}
 else
-python2 ${python_get_base_counts} ${chromosome} "${trioname}_${trioshorthand[0]}" ${variable_site_file} ${workingDir} ${pileupFile} 0
+python2 ${python_get_base_counts} ${chromosome} "${trioname}_${trioshorthand[0]}" ${variable_site_file} ${workingDir} ${pileupFile}.gz 0
 fi
 
 # samtools mpileup -r 10 -f /storage/reference_genomes/human/1k_genomes_phase1/human_g1k_v37.fasta /storage/CEUTrio/20130906/NA12878.mapped.ILLUMINA.bwa.CEU.high_coverage_pcr_free.20130906.bam > chr10_CEU13_878.pileups
