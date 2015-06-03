@@ -22,11 +22,15 @@ if [[ $2 -gt $startpos ]];then    #get last position tested
 #    echo "reset $startpos to $2+1 END:$endpos"
     startpos=$(($2+1)) #start with +1 position, got result from this position already
     outfile="${outfileDir}${startpos}_trio.vcf"
+#else
+#echo "Skip T1"
 fi
 
 
 if [ $endpos -gt $startpos ];then
   ( samtools mpileup -t SP -u -r ${chromosome}:${startpos}-${endpos} -f /storage/reference_genomes/human/1k_genomes_phase1/human_g1k_v37.fasta ${infile[0]} ${infile[1]} ${infile[2]} | bcftools call ${mode} -C trio -S trio_config_CEU.txt -> ${outfile} )
+#else
+#echo "Skip T2"
 fi
 
 #Alternative use inline parameters instead of config file

@@ -1,12 +1,26 @@
 #! /usr/bin/Rscript --vanilla
 # filetype=R
 
+# Rscript search-gt-mdm.R ${numTrial} ${numCom}${isDirty} $file 
 traceLevel <- 0
-upperLimit <- 110
-lowerLimit <- 20
+upperLimit <- 150
+lowerLimit <- 10
 #set.seed(17761980)
+getScriptPath <- function(){
 
-suppressPackageStartupMessages(source("mdm.R"))
+    initial.options <- commandArgs(trailingOnly = FALSE)
+    file.arg.name <- "--file="
+    script.name <- sub(file.arg.name, "", initial.options[grep(file.arg.name, initial.options)])
+    script.dir <- dirname(script.name)
+
+    if(length(script.dir) == 0) stop("can't determine script dir: please call the script with Rscript")
+    if(length(script.dir) > 1) stop("can't determine script dir: more than one '--file' argument detected")
+    return(script.dir)
+}
+
+
+script.dir = getScriptPath()
+suppressPackageStartupMessages(source( file.path(script.dir,"mdm.R") )) 
 options(warn=1)
 
 fitmdm.mle.many <- function(x,n,k) {
@@ -50,6 +64,7 @@ fitmdm.mle.many <- function(x,n,k) {
 
 #########################################################
 
+
 pid <- Sys.getpid()
 args <- commandArgs(trailingOnly=TRUE)
 dirty_data <- FALSE
@@ -71,7 +86,7 @@ if(dirty_data) {
 
 dat <- read.delim(args[3],header=TRUE)
 
-sub_name <- gsub("base_counts_(.*)_CEU(.*)_byref_.*txt","\\1" ,args[3])
+sub_name <- gsub("base_counts_(.*_CEU.*)_878_byref_.*txt","\\1" ,args[3])
 if(sub_name == args[3]){
 	message("Can't find the pattern: ", sub_name)
 	sub_name <- ""

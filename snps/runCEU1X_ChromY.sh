@@ -1,17 +1,13 @@
 #!/bin/bash
-#this is a general script that will take three bam files (kid, dad, mom) and generate a list of sites for which the kid is heterozygous
-#this script calls ./check_snps_all.sh and ./check_snps_all_trio.sh and get_base_counts.py but no changes are required to those scripts
-#before using, change lines 6-21 
+#this is the setup script, call pipelineCore.sh
+# that will take three bam files (kid, dad, mom) and generate a list of sites for which the kid is heterozygous
+#this script calls ./check_snps_all.sh and ./check_snps_all_trio.sh and get_base_counts.py
 
-
+trioname="CEU${1}" #"CEU13"
+chromosome=$2 #21
 
 ScriptHome="/home/steven/Project_MDM/MiDiMu/snps/"
-
-trioname="CEU13"
-chromosome=21
-
 parallel_count=20
-
 
 workingDir="/home/steven/Project_MDM/CEU/${trioname}_C${chromosome}/"
 if [ ! -d ${workingDir} ]; then
@@ -51,9 +47,10 @@ then
   trio=('NA12878.mapped.ILLUMINA.bwa.CEU.high_coverage_pcr_free.20130906.bam' 'NA12892.mapped.ILLUMINA.bwa.CEU.high_coverage_pcr_free.20130906.bam' 'NA12891.mapped.ILLUMINA.bwa.CEU.high_coverage_pcr_free.20130906.bam')
 fi
 
-#echo $workingDir
-#echo $variable_site_file
-#echo ${triolocation}
+echo "===== Setup ====="
+echo "WorkingDir: $workingDir"
+echo "VariableSiteFile: $variable_site_file"
+echo "TrioLocation: ${triolocation}"
 #echo ${trio[0]} ${trio[1]} ${trio[2]}
 
 if [ -z ${triolocation} ] || [ ! -d ${triolocation} ]
@@ -67,8 +64,7 @@ exome=0
 exome_file=0 
 
 
-
-## RUN
+# RUN
 
 . ${ScriptHome}pipelineCore.sh
 

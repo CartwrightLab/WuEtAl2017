@@ -24,11 +24,14 @@ if [[ $2 -gt $startpos ]];then    #get last position tested
 #    echo "reset $startpos to $2+1 END:$endpos"
     startpos=$(($2+1)) #start with +1 position, got result from this position already
     outfile="${outfileDir}${startpos}_single.vcf"
+#else
+#echo "Skip S1"
 fi
 
-#echo "Still got chromosame? ${chromosome}"
 if [ $endpos -gt $startpos ];then
   ( samtools mpileup -t SP -u -r ${chromosome}:${startpos}-${endpos} -f /storage/reference_genomes/human/1k_genomes_phase1/human_g1k_v37.fasta ${infile[0]} | bcftools call ${mode} -> ${outfile} )      #note starting new file
+#else
+#echo "Skip S2"
 fi
 
 ##orig

@@ -77,12 +77,20 @@ callsTrioDir="${workingDir}calls_trio_vcfs/"
 callsSingleDir="${workingDir}calls_single_vcfs/"
 
 if [ ! -d ${callsTrioDir} ]; then
-mkdir ${callsTrioDir}
+    mkdir ${callsTrioDir}
 fi
 
 if [ ! -d ${callsSingleDir} ]; then
-mkdir ${callsSingleDir}
+    mkdir ${callsSingleDir}
 fi
+
+#### print versions
+echo "samtools --version"
+samtools --version
+echo "bcftools --version"
+bcftools --version
+
+
 
 #### In parallel, {} means input line. man parallel
 
@@ -117,11 +125,13 @@ fi
 
 
 #### get all exome pileups. Reuse pileups for different bcftools mode
-if [ $exome -eq 1 ];then
-if [ ! -e ${pileupExomeFile}.gz ];then
-echo "===== Create mpileup exome ======"
-samtools mpileup -r ${chromosome} -f /storage/reference_genomes/human/1k_genomes_phase1/human_g1k_v37.fasta ${triolocation}${exome_file} >  ${pileupExomeFile}    
-gzip ${pileupExomeFile}.gz
+if [ $exome -eq 1 ];then #XXX: should be just one if
+if [[ ! ( -e ${pileupExomeFile}  || -e ${pileupExomeFile}.gz ) ]]; then
+    echo "===== Create mpileup exome ======"
+    samtools mpileup -r ${chromosome} -f /storage/reference_genomes/human/1k_genomes_phase1/human_g1k_v37.fasta ${triolocation}${exome_file} >  ${pileupExomeFile}    
+    gzip ${pileupExomeFile}.gz
+else
+    echo "FOUND ${pileupExomeFile}.gz"
 fi
 fi
 
@@ -129,7 +139,8 @@ fi
 if [ $exome -eq 1 ];then
 python2 ${python_get_base_counts} ${chromosome} "${trioname}_${trioshorthand[0]}" ${variable_site_file} ${workingDir} ${pileupFile}.gz ${pileupExomeFile}
 else
-python2 ${python_get_base_counts} ${chromosome} "${trioname}_${trioshorthand[0]}" ${variable_site_file} ${workingDir} ${pileupFile}.gz 0
+    echo "RUN: python2 ${python_get_base_counts} ${chromosome} "${trioname}_${trioshorthand[0]}" ${variable_site_file} ${workingDir} ${pileupFile}.gz 0"
+    python2 ${python_get_base_counts} ${chromosome} "${trioname}_${trioshorthand[0]}" ${variable_site_file} ${workingDir} ${pileupFile}.gz 0
 fi
 
 # samtools mpileup -r 10 -f /storage/reference_genomes/human/1k_genomes_phase1/human_g1k_v37.fasta /storage/CEUTrio/20130906/NA12878.mapped.ILLUMINA.bwa.CEU.high_coverage_pcr_free.20130906.bam > chr10_CEU13_878.pileups
