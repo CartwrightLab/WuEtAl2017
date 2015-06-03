@@ -40,41 +40,34 @@ subFolders <- c(
 # for(p in 1:length(fullPath){
 p<- 4
 	
-	fullPath <- paste(pwd, subFolders[[p]], sep="")
+fullPath <- paste(pwd, subFolders[[p]], sep="")
 
 
-	setwd(fullPath)
-	maxModel<- extractMaxModel(fullPath)
-	
-
-	upperLimit <- 110
-	lowerLimit <- 20
-	dirtyData <- F
-	
-	hets_byref<- list.files(path=fullPath, pattern="hets.+byref") 
-	dat <- read.delim(paste(fullPath, hets_byref, sep=""), header=TRUE)
-	dataRef<- parseData(dat, lowerLimit, upperLimit, dirtyData)
-	
-	sapply(maxModel, function(x){x$ll})
-	sapply(maxModel, function(x){x$f})
-	sapply(maxModel, function(x){x$params})
-
-	maxLikelihoodTable<- calculateEachLikelihood(dataRef, maxModel)#, numData=100)
-
-	modelParametersSummary<- sapply(maxModel, function(x){
-		x<- cbind(x$params, mdmAlphas(x$params), prop=x[["f"]] )
-		x<- x[,c(2:7,1,8)]
-	})
+setwd(fullPath)
+maxModel<- extractMaxModel(fullPath)
 
 
+upperLimit <- 110
+lowerLimit <- 20
+dirtyData <- F
+
+hets_byref<- list.files(path=fullPath, pattern="hets.+byref") 
+dat <- read.delim(paste(fullPath, hets_byref, sep=""), header=TRUE)
+dataRef<- parseData(dat, lowerLimit, upperLimit, dirtyData)
+
+sapply(maxModel, function(x){x$ll})
+sapply(maxModel, function(x){x$f})
+sapply(maxModel, function(x){x$params})
+
+maxLikelihoodTable<- calculateEachLikelihood(dataRef, maxModel)#, numData=100)
+
+modelParametersSummary<- sapply(maxModel, function(x){
+	x<- cbind(x$params, mdmAlphas(x$params), prop=x[["f"]] )
+	x<- x[,c(2:7,1,8)]
+})
 
 propEM<-sapply(maxModel, function(x){x$f})
-
-# apply(maxLikelihood[[2]],1,which.max)
-propML<- sapply(maxLikelihoodTable, function(x){
-	prop <- table(apply(x,1,which.max))
-	return(prop/sum(prop))
-})
+propML<- getMaxLikelihoodProp(maxLikelihoodTable)
 
 modelParametersSummary2 <- modelParametersSummary
 propResultTable<- vector("list", length(propEM))
@@ -99,7 +92,41 @@ for(i in 1:length(propML)){
 	
 }
 
+#######################################
+##### FP. in child not NOT in human
+###############################
+x <- x[dat$callby == 2 & ((dat$snp == 1 & dat$snpdif == 0) | dirty_data), ]
 
+data.fp <- dat[dat$callby == 2 & dat$snp == 0, ]
+
+
+dataFP<- parseDataFP(dat, lowerLimit, upperLimit)
+
+maxLikelihoodFP<- calculateEachLikelihood(dataFP, maxModel)
+
+propFP<- getMaxLikelihoodProp(maxLikelihoodFP)
+
+
+cbind(unlist(propEM), unlist(propML), unlist(propFP) )
+
+modelParametersSummary2 <- modelParametersSummary
+propResultTable<- vector("list", length(propEM))
+names(propResultTable)<- names(propEM)
+for(i in 1:length(propML)){
+	diff_ML <- propEM[[i]] - propML[[i]]
+	diff_FP <- propEM[[i]] - propFP[[i]]
+	propResultTable[[i]]<- rbind(propEM[[i]], propML[[i]], propFP[[i]], diff_ML, diff_FP)
+	rownames(propResultTable[[i]])<- c("EM", "ML", "FP", "Diff_ML", "Diff_FP")
+	
+	if(i < 3){
+		modelParametersSummary2[[i]] <- cbind(t(modelParametersSummary[[i]]), "ML"=propML[[i]], "FP"=propFP[[i]], "Diff_ML"=diff_ML, "Diff_FP"=diff_FP)
+	}
+	else{
+		modelParametersSummary2[[i]] <- cbind(modelParametersSummary[[i]], "ML"=propML[[i]], "FP"=propFP[[i]], "Diff_ML"=diff_ML, "Diff_FP"=diff_FP)
+	}
+}
+
+####################
 
 
 summary(apply(maxLikelihoodTable[[2]], 1, diff))
