@@ -1,6 +1,5 @@
 
 
-
 extractMaxModel<- function(path){
 
 	listRData<- list.files(path=path, pattern="hets.+RData") 
@@ -76,12 +75,12 @@ parseData<- function(dat, lowerLimit, upperLimit, dirtyData){
 
 getMaxLikelihoodProp<- function(maxLikelihoodList){
 	result<- sapply(maxLikelihoodList, function(x){
-				prop <- table(apply(x,1,which.max))
-				return(prop/sum(prop))
+                prop <- table(apply(x,1,which.max))
+                return(prop/sum(prop))
 			})
 	return(result)
 }
-
+    
 
 parseDataFP<- function(dat, lowerLimit, upperLimit){
 	dataRef <- cbind(dat$refs,dat$alts,dat$e1s+dat$e2s)
@@ -96,6 +95,9 @@ parseDataFP<- function(dat, lowerLimit, upperLimit){
 }
 	
 	
+######################################################################
+##### Modified from EM script
+######################################################################
 	
 
 # convert a parameter vector to alphas

@@ -3,8 +3,8 @@ source("/home/steven/Postdoc2/Project_MDM/MiDiMu/R/summaryFunctions.R")
 
 ##########################
 ### TODO:
-### Rerun EM for 1000 iterations
-### Try a different chromosome, or a section
+### [x] Rerun EM for 1000 iterations
+### [x] Try a different chromosome, or a section
 ### Re-estimate categories after divided into good/bad sites.
 ###		Hopefully bad sites are at minor categories
 ### 
