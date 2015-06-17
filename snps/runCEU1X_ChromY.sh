@@ -33,6 +33,10 @@ if [ ${trioname} == "CEU10" ]
 then
   triolocation="/storage/CEUTrio/20100311/"
   trio=('NA12878.chrom21.ILLUMINA.bwa.CEU.high_coverage.20100311.bam' 'NA12892.chrom21.ILLUMINA.bwa.CEU.high_coverage.20100517.bam' 'NA12891.chrom21.ILLUMINA.bwa.CEU.high_coverage.20100517.bam')
+  if [ $chromosome -eq 10 ]; then
+    trio=('NA12878.chrom10.ILLUMINA.bwa.CEU.high_coverage.20100311.bam' 'NA12891.chrom10.ILLUMINA.bwa.CEU.high_coverage.20100517.bam' 'NA12892.chrom10.ILLUMINA.bwa.CEU.high_coverage.20100517.bam')
+  fi
+
 elif [ ${trioname} == "CEU11" ]
 then
   triolocation="/storage/CEUTrio/20110915/"

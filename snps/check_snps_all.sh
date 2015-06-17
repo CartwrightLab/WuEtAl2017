@@ -1,4 +1,5 @@
-#/bin/sh
+#!/bin/sh
+
 chromosome=$1
 line=$2     #range in chromosome
 isOriginalCaller=$3
@@ -11,6 +12,7 @@ endpos=$2
 infile=($3$4 $3$5 $3$6) #child parent1 parent2
 #echo "$endpos $startpos"
 #echo "$1 $2 $3 $4"
+
 if $isOriginalCaller; then
   mode="-c" #-c, --consensus-caller	bcftools
 else
