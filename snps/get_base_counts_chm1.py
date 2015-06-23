@@ -123,52 +123,59 @@ for filename in outfilenames:
     print ("Process %s" % filename)
     sys.stdout.flush()
     #XXX: change to with open('a', 'w') as a, open('b', 'w') as b:
-    fileout1 = open(result_dir+'base_counts_'+filename+'_'+person+'_flag_filtered.txt','w')
-    fileout1.write('pos'+"\t"+'ref'+"\t"+'alt'+"\t"+'As'+"\t"+'Cs'+"\t"+'Gs'+"\t"+'Ts'+"\t"+'callby'+"\t"+'snp'+"\t"+'snpdif'+"\t"+'Ex'+"\n")
-    fileout2 = open(result_dir+'base_counts_'+filename+'_'+person+'_byref_flag_filtered.txt','w')
-    fileout2.write('pos'+"\t"+'ref'+"\t"+'alt'+"\t"+'refs'+"\t"+'alts'+"\t"+'e1s'+"\t"+'e2s'+"\t"+'callby'+"\t"+'snp'+"\t"+'snpdif'+"\t"+'Ex'+"\n")
+ #   fileout1 = open(result_dir+'base_counts_'+filename+'_'+person+'_flag_filtered.txt','w')
+ #   fileout1.write('pos'+"\t"+'ref'+"\t"+'alt'+"\t"+'As'+"\t"+'Cs'+"\t"+'Gs'+"\t"+'Ts'+"\t"+'callby'+"\t"+'snp'+"\t"+'snpdif'+"\t"+'Ex'+"\n")
+ #   fileout2 = open(result_dir+'base_counts_'+filename+'_'+person+'_byref_flag_filtered.txt','w')
+ #   fileout2.write('pos'+"\t"+'ref'+"\t"+'alt'+"\t"+'refs'+"\t"+'alts'+"\t"+'e1s'+"\t"+'e2s'+"\t"+'callby'+"\t"+'snp'+"\t"+'snpdif'+"\t"+'Ex'+"\n")
     
-    # pileups=open('chr'+chr+'_'+person+'.pileups','r')
-    # pileups=open(pileupFile,'r')
-    with gzip.open(pileupFile, 'rb') as pileups:
-        for line in pileups:
-            splitline = line.split()
-            if len(splitline)>4:            
-                chr,pos,ref,count,bases,qual = line.split()
-                if pos in allcallsdict[filename]:
-                    if ref is not 'N':                    
-                        basecounts=dict()
-                        basecounts['ref']=bases.count('.')+bases.count(',')
-                        basecounts['A']=bases.count('A')+bases.count('a')
-                        basecounts['C']=bases.count('C')+bases.count('c')
-                        basecounts['G']=bases.count('G')+bases.count('g')
-                        basecounts['T']=bases.count('T')+bases.count('t')
-                        basecounts[ref]=basecounts['ref']
-                    
-                        fileout1.write(pos+"\t"+ref+"\t"+allcallsdict[filename][pos].alt+"\t"+
-                                       str(basecounts['A'])+"\t"+str(basecounts['C'])+"\t"+
-                                       str(basecounts['G'])+"\t"+str(basecounts['T'])+"\t"+
-                                       str(allcallsdict[filename][pos].callby)+"\t"+
-                                       str(allcallsdict[filename][pos].variable)+"\t"+
-                                       str(allcallsdict[filename][pos].altalt)+"\t"+
-                                       str(allcallsdict[filename][pos].exome)+"\n")
-                    
-                        baselist=list()
-                        baselist.append(basecounts[ref])
-                        del basecounts[ref]
-                        del basecounts['ref']
-                        if allcallsdict[filename][pos].alt is not ref:
-                            baselist.append(basecounts[allcallsdict[filename][pos].alt])
-                            del basecounts[allcallsdict[filename][pos].alt]
-                        for k,v in basecounts.iteritems():
-                            baselist.append(v)        
-                        fileout2.write(pos+"\t"+ref+"\t"+allcallsdict[filename][pos].alt+"\t"+
-                                       str(baselist[0])+"\t"+str(baselist[1])+"\t"+
-                                       str(baselist[2])+"\t"+str(baselist[3])+"\t"+
-                                       str(allcallsdict[filename][pos].callby)+"\t"+
-                                       str(allcallsdict[filename][pos].variable)+"\t"+
-                                       str(allcallsdict[filename][pos].altalt)+"\t"+
-                                       str(allcallsdict[filename][pos].exome)+"\n")
+    with open(result_dir+'base_counts_'+filename+'_'+person+'_flag_filtered.txt','w') as fileout1, \
+            open(result_dir+'base_counts_'+filename+'_'+person+'_byref_flag_filtered.txt','w') as fileout2:
     
-    fileout1.close()
-    fileout2.close()
+    
+        fileout1.write('pos'+"\t"+'ref'+"\t"+'alt'+"\t"+'As'+"\t"+'Cs'+"\t"+'Gs'+"\t"+'Ts'+"\t"+'callby'+"\t"+'snp'+"\t"+'snpdif'+"\t"+'Ex'+"\n")
+        fileout2.write('pos'+"\t"+'ref'+"\t"+'alt'+"\t"+'refs'+"\t"+'alts'+"\t"+'e1s'+"\t"+'e2s'+"\t"+'callby'+"\t"+'snp'+"\t"+'snpdif'+"\t"+'Ex'+"\n")
+        
+        # pileups=open('chr'+chr+'_'+person+'.pileups','r')
+        # pileups=open(pileupFile,'r')
+        with gzip.open(pileupFile, 'rb') as pileups:
+            for line in pileups:
+                splitline = line.split()
+                if len(splitline)>4:            
+                    chr,pos,ref,count,bases,qual = line.split()
+                    if pos in allcallsdict[filename]:
+                        if ref is not 'N':                    
+                            basecounts=dict()
+                            basecounts['ref']=bases.count('.')+bases.count(',')
+                            basecounts['A']=bases.count('A')+bases.count('a')
+                            basecounts['C']=bases.count('C')+bases.count('c')
+                            basecounts['G']=bases.count('G')+bases.count('g')
+                            basecounts['T']=bases.count('T')+bases.count('t')
+                            basecounts[ref]=basecounts['ref']
+                        
+                            fileout1.write(pos+"\t"+ref+"\t"+allcallsdict[filename][pos].alt+"\t"+
+                                           str(basecounts['A'])+"\t"+str(basecounts['C'])+"\t"+
+                                           str(basecounts['G'])+"\t"+str(basecounts['T'])+"\t"+
+                                           str(allcallsdict[filename][pos].callby)+"\t"+
+                                           str(allcallsdict[filename][pos].variable)+"\t"+
+                                           str(allcallsdict[filename][pos].altalt)+"\t"+
+                                           str(allcallsdict[filename][pos].exome)+"\n")
+                        
+                            baselist=list()
+                            baselist.append(basecounts[ref])
+                            del basecounts[ref]
+                            del basecounts['ref']
+                            if allcallsdict[filename][pos].alt is not ref:
+                                baselist.append(basecounts[allcallsdict[filename][pos].alt])
+                                del basecounts[allcallsdict[filename][pos].alt]
+                            for k,v in basecounts.iteritems():
+                                baselist.append(v)        
+                            fileout2.write(pos+"\t"+ref+"\t"+allcallsdict[filename][pos].alt+"\t"+
+                                           str(baselist[0])+"\t"+str(baselist[1])+"\t"+
+                                           str(baselist[2])+"\t"+str(baselist[3])+"\t"+
+                                           str(allcallsdict[filename][pos].callby)+"\t"+
+                                           str(allcallsdict[filename][pos].variable)+"\t"+
+                                           str(allcallsdict[filename][pos].altalt)+"\t"+
+                                           str(allcallsdict[filename][pos].exome)+"\n")
+        
+#        fileout1.close()
+#        fileout2.close()

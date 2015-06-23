@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #this is the setup script, call pipelineCoreCHM1.sh
 # that will take one bam file,and generate a list of sites for which the kid is heterozygous
 #this script calls ./check_snps_all.sh and get_base_counts.py
@@ -8,6 +8,16 @@ chromosome=$1  #21
 
 ScriptHome="/home/steven/Project_MDM/MiDiMu/snps/"
 parallel_count=20
+
+#if [ ! -z $chromosome ];then
+#    echo "No chromosome seleted $chromosome"
+#fi
+
+if [ -z $chromosome ] ||  ([ $chromosome -ne 10 ] && [ $chromosome -ne 21 ]) ; then
+    echo "ERROR: only chr 10 and 21 are supported now. Chromosome:${chromosome}"
+    exit 2
+fi
+
 
 workingDir="/home/steven/Project_MDM/CHM1/${chm1Name}_C${chromosome}/"
 if [ ! -d ${workingDir} ]; then
@@ -24,7 +34,7 @@ fi
 
 ## VCF
 variable_site_file="/storage/StevenStorage/CEU/ALL.chr${chromosome}.integrated_phase1_v3.20101123.snps_indels_svs.genotypes.vcf.gz"
-variable_site_file="/storage/chm1/vcf/diploid_raw_UG.vcf"
+variable_site_file="/storage/StevenStorage/CHM1/VCF/diploid_raw_UG_C${chromosome}.vcf"
 
 
 ## FIX setting

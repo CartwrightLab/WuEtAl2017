@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #this is the setup script, call pipelineCore.sh
 # that will take three bam files (kid, dad, mom) and generate a list of sites for which the kid is heterozygous
 #this script calls ./check_snps_all.sh and ./check_snps_all_trio.sh and get_base_counts.py
