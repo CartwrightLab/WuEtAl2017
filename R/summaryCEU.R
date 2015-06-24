@@ -26,23 +26,40 @@ lowerLimit <- 10
 # if(dirtyData) {
 # 	k <- as.numeric(sub("[Dd]$","",k))
 # } else {
-
+latexDir<- "/home/steven/Postdoc2/Project_MDM/DiriMulti/"
 pwd <- "/home/steven/Postdoc2/Project_MDM/CEU/"
+
 setwd(pwd)
 
 subNameList<- c(
+"CEU10_C10",
+"CEU10_C21",
+"CEU11_C10",
+"CEU11_C21",
 "CEU12_C10",
 "CEU12_C21",
 "CEU13_C10",
 "CEU13_C21"
 )
 
+fullTitleList<- c(
+"CEU 2010 Chromosome 10",
+"CEU 2010 Chromosome 21",
+"CEU 2011 Chromosome 10",
+"CEU 2011 Chromosome 21",
+"CEU 2012 Chromosome 10",
+"CEU 2012 Chromosome 21",
+"CEU 2013 Chromosome 10",
+"CEU 2013 Chromosome 21"
+)
 
 
-p<- 4
-# for(p in 1:length(subName) ){
+p<- 8
+# for (p in 2:4){
+# for(p in 2:length(subNameList) ){
 
 subName<- subNameList[p]
+fullTitle<- fullTitleList[p]
 subFolders <- paste0(subName, "/original/base_count/")
 fullPath <- file.path(pwd, subFolders)
 
@@ -50,16 +67,17 @@ setwd(fullPath)
 maxModel<- extractMaxModel(fullPath)
 
 hets_byref<- list.files(path=fullPath, pattern="hets.+byref") 
-dat <- read.delim(paste(fullPath, hets_byref, sep=""), header=TRUE)
-dataRef<- parseData(dat, lowerLimit, upperLimit, dirtyData)
+dataFull <- read.delim(paste(fullPath, hets_byref, sep=""), header=TRUE)
+dataRef<- parseData(dataFull, lowerLimit, upperLimit, dirtyData)
+dataRefDirty<- parseData(dataFull, lowerLimit, upperLimit, dirtyData=TRUE)
 
-fileMaxLikelihoodTabel <- file.path(fullPath, "maxLikelihoodTable.RData")
+fileMaxLikelihoodTabel <- file.path(fullPath, "maxLikelihoodTableFull.RData")
 if ( file.exists(fileMaxLikelihoodTabel) ){
     load(fileMaxLikelihoodTabel)
 } else{
-#     maxLikelihoodTable<- calculateEachLikelihood(dataRef, maxModel)#, numData=100)
+    maxLikelihoodTable<- calculateEachLikelihood(maxModel, dataFull, lowerLimit=lowerLimit, upperLimit=upperLimit)#, numData=100)
     attr(maxLikelihoodTable, "title")<- subName
-    save(maxLikelihoodTable, file=file.path(fullPath, "maxLikelihoodTable.RData"))
+    save(maxLikelihoodTable, file=file.path(fullPath, "maxLikelihoodTableFull.RData"))
 }
 
 modelLikelihood<- sapply(maxModel, function(x){x$ll})
@@ -70,6 +88,7 @@ modelParametersSummary<- sapply(maxModel, function(x){
     x<- x[,c(2:7,1,8)]
     x<- matrix(x, ncol=8)
     colnames(x)<- c("pi_ref", "pi_alt", "pi_err", "alpha_ref", "alpha_alt", "alpha_err", "phi", "prop")
+    
     return(x)
 })
 
@@ -93,33 +112,117 @@ for(i in 1:length(propML)){
         modelParametersSummary2[[i]] <- cbind(modelParametersSummary[[i]], "ML"=propML[[i]])
 #         "Diff"=diff)
 #     }
+
+
+#     newOrder<-rev(order(modelParametersSummary2[[i]][,8]))
+#     modelParametersSummary2[[i]]<- 
+#         modelParametersSummary2[[i]][newOrder,]
+    
 }
     
+    
+    
+    
+## latex parameter table    
 # formatC(x, digits=3, width=8, format="g")
 # sprintf("%8.3g" , x)
 latexTable<- sapply(modelParametersSummary2, function(x){
-    x <- formatC(x, digits=3, width=8, format="g")
+    newOrder<-rev(order(x[,8]))
+    x<- x[newOrder,]
+    
+    x<- formatC(x, digits=3, width=8, format="g")
+    x<- matrix(x,ncol=9)
     s<- apply(x,1,function(y){
         paste(y, collapse=" & ")
     })
     latex<- paste(s, collapse=" \\\\ \n & ")
 })
 
+
+
 header<- names(latexTable)
 header<- gsub("hets_" , "", header)
 header<- gsub("_" , "M", header)
+
+prefix<- paste0("\\begin{tabular}{|c|ccc|ccc|c|c|c|}
+    \\hline \\multicolumn{10}{|c|}{Parameter estimates",fullTitle,"}\\\\ \\hline
+    Model & $\\pi_{ref}$ & $\\pi_{alt}$ & $\\pi_{err}$ & $\\alpha_{ref}$ & $\\alpha_{alt}$ & $\\alpha_{err}$ & $\\varphi$ &  $p$ & ML-P \\\\ \\hline")
+
+sufix<- "\\end{tabular}"
+
 latexTableFull <- latexTable
-fileLatexTable <- file.path(pwd, paste0(subName,"_latexTable.tex") )
-cat("",file=fileLatexTable)
+fileLatexTable <- file.path(latexDir, paste0(subName,"_latexTable.tex") )
+cat(prefix, file=fileLatexTable, fill=T)
 for(i in 1:length(latexTable) ){
     latexTableFull[i]<- paste0(header[i], " & ", latexTable[[i]], " \\\\ \\hline")
-    cat(latexTableFull[i],file=fileLatexTable, fill=T, append=T)
+    cat(latexTableFull[i], file=fileLatexTable, fill=T, append=T)
 }
+cat(sufix, file=fileLatexTable, fill=T, append=T)
 # write.table(latexTableFull, file=file.path(fullPath, "latxTable"), quote=F, row.names=F)
     
 
-#writeLines
+## maxlikelihood table
+modelLikelihood<- sapply(maxModel, function(x){x$ll})
+modelLikelihood[seq(1,11,by=2)]
+modelLikelihood[seq(2,12,by=2)]
 
+# \begin{tabular}{|c|c|c|}
+#         \hline \multicolumn{3}{|c|}{-lnL}\\ \hline
+#         Model & filtered & unfiltered \\\hline
+#         DM & -1457308 & -1623316 \\ 
+#         2 DM & -1456421 &-1619317  \\ 
+#         3 DM & -1456400 & -1619209   \\ 
+#         4 DM &-1456380  &  -1619184  \\
+#         5 DM &-1456372 & -1619176  \\
+#         6 DM & -1456368& -1619169  \\\hline
+#       \end{tabular}
+
+
+fileMaxLikelihoodLatexTabel <- file.path(latexDir, paste0(subName, "_maxLikelihoodLatexTable.tex") )
+
+prefix<- paste0("\\begin{tabular}{|c|c|c|c|c|c|c|}
+    \\hline \\multicolumn{7}{|c|}{",fullTitle," } \\\\ \\hline
+    Model & TP lnL & FP lnL & TP AIC & FP AIC & TP BIC & FP BIC \\\\ \\hline")
+sufix<- "\\hline\n\\end{tabular}"
+
+maxLiTable<- matrix(ncol=6, nrow=length(modelLikelihood)/2 )
+numFreeP<- seq(3,by=4,length=6)
+coefBIC<- c(log(NROW(dataRef)), log(NROW(dataRefDirty)) )
+for(i in 1:NROW(maxLiTable) ){
+    t1<- c(modelLikelihood[i*2-1], modelLikelihood[i*2])
+    t2<- -2*t1 + 2*numFreeP[i]
+    t3<- -2*t1 + coefBIC*numFreeP[i]
+    maxLiTable[i,]<- c(t1, t2, t3)
+}
+minIndex<- apply(maxLiTable,2,which.min)
+maxLiTable<- formatC(maxLiTable,  digits=2, width=12, format="f")
+for(i in 3:NCOL(maxLiTable)){
+    maxLiTable[minIndex[i], i]<-paste0(maxLiTable[minIndex[i], i], "*")
+}
+
+maxLikelihoodLatex<- apply(maxLiTable,1,function(y){
+        paste(y, collapse=" & ")
+    })
+
+
+cat(prefix, file=fileMaxLikelihoodLatexTabel, fill=T)
+for(i in 1:length(maxLikelihoodLatex) ){
+    latex<- paste0(header[i*2-1], " & ", maxLikelihoodLatex[i], " \\\\ ")
+    cat(latex, file=fileMaxLikelihoodLatexTabel, fill=T, append=T)
+}
+cat(sufix, file=fileMaxLikelihoodLatexTabel, fill=T, append=T)
+
+
+
+
+
+
+
+
+
+
+    
+#writeLines 
 # totalAbsDiff<- vector()
 # for(i in 1:length(propML)){
 #     totalAbsDiff[i]<- sum(abs(propML[[i]] - propEM[[i]]))/2
@@ -129,19 +232,240 @@ for(i in 1:length(latexTable) ){
 #######################################
 ##### FP. in child not NOT in human
 ###############################
-x <- x[dat$callby == 2 & ((dat$snp == 1 & dat$snpdif == 0) | dirtyData), ]
+# dataRef<- parseData(dat, lowerLimit, upperLimit, dirtyData)
+
+
+p<- 4
+# for(p in 2:length(subNameList) ){
+
+subName<- subNameList[p]
+fullTitle<- fullTitleList[p]
+subFolders <- paste0(subName, "/original/base_count/")
+fullPath <- file.path(pwd, subFolders)
+
+setwd(fullPath)
+maxModel<- extractMaxModel(fullPath)
+
+hets_byref<- list.files(path=fullPath, pattern="hets.+byref") 
+dat <- read.delim(paste(fullPath, hets_byref, sep=""), header=TRUE)
+# dataRef<- parseData(dat, lowerLimit, upperLimit, dirtyData)
+# dataRefDirty<- parseData(dat, lowerLimit, upperLimit, dirtyData=TRUE)
+
+## SNP count
+
+fileSnpCountLatexTabel <- file.path(latexDir, paste0("snpCountLatexTable.tex") )
+
+prefix<- paste0("\\begin{tabular}{|c|c|c|c|c|}
+    \\hline \\multicolumn{5}{|c|}{", "" ," } \\\\ \\hline
+    Dataset & Method (1) & Method (2) & Both methods & True heterozygotes \\\\ \\hline")
+sufix<- "\\hline\n\\end{tabular}"
+
+
+cat(prefix, file=fileSnpCountLatexTabel, fill=T)
+for(p in length(subNameList):2 ){
+
+    subName<- subNameList[p]
+    fullTitle<- fullTitleList[p]
+    subFolders <- paste0(subName, "/original/base_count/")
+    fullPath <- file.path(pwd, subFolders)
+    setwd(fullPath)
+
+    hets_byref<- list.files(path=fullPath, pattern="hets.+byref") 
+    dat <- read.delim(paste(fullPath, hets_byref, sep=""), header=TRUE)
+
+    name2<- gsub("_" , " ", subName)
+    snpCount <- c(name2, table(dat$callby)[c(1,3,2)], sum( (dat$callby == 2 & (dat$snp == 1 & dat$snpdif == 0)) ) )  
+
+    snpLatex <- paste(snpCount, collapse=" & ")
+    snpLatex <- paste(snpLatex ,"\\\\")
+    cat(snpLatex, file=fileSnpCountLatexTabel, fill=T, append=T)
+}
+cat(sufix, file=fileSnpCountLatexTabel, fill=T, append=T)
+
+
+
+####################
+
+
+
+x <- x[dat$callby == 2 & (dat$snp == 1 & dat$snpdif == 0) , ]
+
+indexCall2Snp <- (dat$callby == 2 & ((dat$snp == 1 & dat$snpdif == 0) ))
+indexCall2SnpDiff <- (dat$callby == 2 & ((dat$snp == 1 & dat$snpdif == 1) ))
+
 
 table(dat$callby, dat$snp, dat$snpdif)
 
 table(dat$callby)
 
 
-data.fp <- dat[dat$callby == 2 & dat$snp == 0, ]
+table(dat$callby, dat$snp)
+
+table(dat$callby, dat$snpdif)
+
+table(dat$snp, dat$snpdif)
+
+indexFP<- dat$callby == 2 & dat$snp == 0
+indexTP <- dat$callby == 2 & dat$snp == 1
 
 
-dataFP<- parseDataFP(dat, lowerLimit, upperLimit)
+dataFP<- parseDataIndex(dat, indexFP, lowerLimit, upperLimit)
+dataTP<- parseDataIndex(dat, indexTP, lowerLimit, upperLimit)
+dataSNP<- parseDataIndex(dat, indexCall2Snp, lowerLimit, upperLimit)
+dataSNP<- parseDataIndex(dat, indexCall2SnpDiff, lowerLimit, upperLimit)
 
-maxLikelihoodFP<- calculateEachLikelihood(dataFP, maxModel)
+dataXP<- list(FP=dataFP, TP=dataTP)
+pp<- list()
+for(x in 1:length(dataXP)){
+    pp[[x]]<- list()
+    for(d in 1:length(maxModel)){
+        maxLikelihoodXP<- calculateEachLikelihoodOneModel(maxModel[[d]], dataXP[[x]])
+        pp[[x]][[d]]<- apply(maxLikelihoodXP,1,which.max)
+    }
+    pp[[x]]
+}
+names(pp)<- names(dataXP)
+
+maxModelIndex<- sapply(maxModel,function(x){which.max(x$f)})
+maxModelIndex
+sapply(pp$FP,function(x){which.max(table(x))})
+sapply(pp$TP,function(x){which.max(table(x))})
+
+
+sapply(pp$FP,function(x){
+    y<- (table(x))
+    s<- sum(y)
+    r<- y/s
+    rownames(r)<- NULL
+    return(r)
+})
+
+
+sapply(pp$TP,function(x){
+    y<- (table(x))
+    s<- sum(y)
+    r<- y/s
+    rownames(r)<- NULL
+    return(r)
+})
+
+
+# > p
+# [1] 4
+# > maxModelIndex
+#     hets_CEU13_1    hets_CEU13_1D  hets_CEU13_2.m2 hets_CEU13_2D.m2 
+#                1                1                2                2 
+#  hets_CEU13_3.m3 hets_CEU13_3D.m3  hets_CEU13_4.m4 hets_CEU13_4D.m4 
+#                3                3                4                4 
+#  hets_CEU13_5.m5 hets_CEU13_5D.m5  hets_CEU13_6.m6 hets_CEU13_6D.m6 
+#                5                5                6                6 
+# > sapply(pp$FP,function(x){which.max(table(x))})
+# 1 1 1 1 1 2 1 2 2 4 5 5 
+# 1 1 1 1 1 2 1 2 2 4 5 5 
+# > sapply(pp$TP,function(x){which.max(table(x))})
+# 1 1 2 2 3 3 4 4 5 5 6 6 
+# 1 1 2 2 3 3 4 4 5 5 6 6 
+# 
+
+# > sapply(pp$FP,function(x){
+# +     y<- (table(x))
+# +     s<- sum(y)
+# +     r<- y/s
+# +     rownames(r)<- NULL
+# +     return(r)
+# + })
+# [[1]]
+# [1] 1
+# 
+# [[2]]
+# [1] 1
+# 
+# [[3]]
+# [1] 0.6591884 0.3408116
+# 
+# [[4]]
+# [1] 0.6726053 0.3273947
+# 
+# [[5]]
+# [1] 0.66336743 0.02155504 0.31507753
+# 
+# [[6]]
+# [1] 0.2096118 0.4480370 0.3423513
+# 
+# [[7]]
+# [1] 0.47740020 0.12537116 0.03156274 0.36566590
+# 
+# [[8]]
+# [1] 0.28571429 0.37611349 0.02397449 0.31419773
+# 
+# [[9]]
+# [1] 0.03046299 0.45353569 0.11613329 0.05454745 0.34532058
+# 
+# [[10]]
+# [1] 0.17211041 0.27361707 0.03079292 0.28978335 0.23369625
+# 
+# [[11]]
+# [1] 0.08567030 0.03145277 0.05036842 0.12669086 0.46376333 0.24205433
+# 
+# [[12]]
+# [1] 0.26954800 0.05971627 0.03024304 0.13691851 0.29385241 0.20972176
+# 
+# > 
+# > 
+# > sapply(pp$TP,function(x){
+# +     y<- (table(x))
+# +     s<- sum(y)
+# +     r<- y/s
+# +     rownames(r)<- NULL
+# +     return(r)
+# + })
+# [[1]]
+# [1] 1
+# 
+# [[2]]
+# [1] 1
+# 
+# [[3]]
+# [1] 0.185236 0.814764
+# 
+# [[4]]
+# [1] 0.1850017 0.8149983
+# 
+# [[5]]
+# [1] 0.212956143 0.004117844 0.782926013
+# 
+# [[6]]
+# [1] 0.09782390 0.09112822 0.81104787
+# 
+# [[7]]
+# [1] 0.117609642 0.073284232 0.005390023 0.803716103
+# 
+# [[8]]
+# [1] 0.154871108 0.051054570 0.006494811 0.787579511
+# 
+# [[9]]
+# [1] 0.002477402 0.097556076 0.150284566 0.011416137 0.738265819
+# 
+# [[10]]
+# [1] 0.15477067 0.20984265 0.01158353 0.01797790 0.60582524
+# 
+# [[11]]
+# [1] 0.083126883 0.002912621 0.010010044 0.304854369 0.105724807 0.493371276
+# 
+# [[12]]
+# [1] 0.20954135 0.01382658 0.01161701 0.21118179 0.01817877 0.53565450
+# 
+# > 
+
+
+table(ppFP)
+# pp
+#    1    2 
+# 5994 3099 
+maxLikelihoodTP<- calculateEachLikelihoodOneModel(maxModel[[3]], dataTP)
+ppTP<- apply(maxLikelihoodTP,1,which.max)
+table(ppTP)
+
 
 propFP<- getMaxLikelihoodProp(maxLikelihoodFP)
 

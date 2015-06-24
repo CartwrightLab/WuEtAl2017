@@ -29,47 +29,81 @@ extractMaxModel<- function(path){
 
 
 
-calculateEachLikelihood<- function(data, maxModel, numData=NULL){
+calculateEachLikelihood<- function(maxModel, fullData, lowerLimit, upperLimit, numData=NULL){
 
-	if( is.null(numData)){
-		numData	<- nrow(data)
-	}
-	maxLikelihood <- list()
-	for( d in 1:length(maxModel)){
+    whichIsDirty <- grepl("_[0-9]D",names(maxModel))
+    dataRef<- parseData(fullData, lowerLimit, upperLimit, dirtyData)
+    dataRefDirty<- parseData(fullData, lowerLimit, upperLimit, dirtyData=TRUE)
 
-		params<- maxModel[[d]]$param
-		if(!is.matrix(params)){
-			params<- matrix(params, nrow=1)
-		}
-		numParams <- nrow(params)
+    maxLikelihood <- vector(length=length(maxModel), mode="list")
+    names(maxLikelihood)<- names(maxModel)
+    
+    for( d in 1:length(maxModel)){
 
-		maxLikelihood[[d]]<- matrix(nrow=numData, ncol=numParams)
-		for (i in 1:numData){
-			x <- matrix(data[i,], nrow=1)
-			sum_stat <- mdmSumStatsSingle(x)
-			stat <- sum_stat$s
+        if(whichIsDirty[d]){
+            data<- dataRefDirty
+        }
+        else{
+            data<- dataRef
+        }
+        maxLikelihood[[d]]<- calculateEachLikelihoodOneModel(maxModel[[d]], data)
+        
+#         params<- maxModel[[d]]$param
+#         if(!is.matrix(params)){
+#             params<- matrix(params, nrow=1)
+#         }
+#         numParams <- nrow(params)
+#         numData<- nrow(data)
+        
+#         maxLikelihood[[d]]<- matrix(nrow=numData, ncol=numParams)
+#         for (i in 1:numData){
+#             x <- matrix(data[i,], nrow=1)
+#             sum_stat <- mdmSumStatsSingle(x)
+#             stat <- sum_stat$s
+# 
+#             for(p in 1:numParams){
+#                 maxLikelihood[[d]][i,p]<- mdmSingleLogLikeCore(stat, params[p,])
+#             }
+#         }
 
-			for(p in 1:numParams){
-				maxLikelihood[[d]][i,p]<- mdmSingleLogLikeCore(stat, params[p,])
-			}
-		}
-
-	}
-	names(maxLikelihood)<- names(maxModel)
-
-	return(maxLikelihood)
+    }
+    
+    return(maxLikelihood)
 }
 
+calculateEachLikelihoodOneModel<- function(model, data){
+    numData<- nrow(data)
+    
+    params<- model$param
+#         if(!is.matrix(params)){
+#             params<- matrix(params, nrow=1)
+#         }
+    numParams <- nrow(params)
+    
+    maxLikelihood<- matrix(nrow=numData, ncol=numParams)
+    for (i in 1:numData){
+        x <- matrix(data[i,], nrow=1)
+        sum_stat <- mdmSumStatsSingle(x)
+        stat <- sum_stat$s
+
+        for(p in 1:numParams){
+            maxLikelihood[i,p]<- mdmSingleLogLikeCore(stat, params[p,])
+        }
+    }
+    return(maxLikelihood)
+}
+
+
 parseData<- function(dat, lowerLimit, upperLimit, dirtyData){
-	dataRef <- cbind(dat$refs,dat$alts,dat$e1s+dat$e2s)
-	dataRef <- data.matrix(dataRef)
-	row.names(dataRef) <- dat$pos
-	dataRef <- dataRef[dat$callby == 2 & ((dat$snp == 1 & dat$snpdif == 0) | dirtyData), ]
-	n <- rowSums(dataRef)
-	oo <- lowerLimit <= n & n <= upperLimit
-	dataRef <- dataRef[oo,]
-	n <- n[oo]
-	return(dataRef)
+    dataRef <- cbind(dat$refs,dat$alts,dat$e1s+dat$e2s)
+    dataRef <- data.matrix(dataRef)
+    row.names(dataRef) <- dat$pos
+    dataRef <- dataRef[dat$callby == 2 & ((dat$snp == 1 & dat$snpdif == 0) | dirtyData), ]
+    n <- rowSums(dataRef)
+    oo <- lowerLimit <= n & n <= upperLimit
+    dataRef <- dataRef[oo,]
+    n <- n[oo]
+    return(dataRef)
 }
 
 
@@ -92,6 +126,18 @@ parseDataFP<- function(dat, lowerLimit, upperLimit){
 	dataRef <- dataRef[oo,]
 	n <- n[oo]
 	return(dataRef)
+}
+	
+parseDataIndex<- function(dat, index, lowerLimit, upperLimit){
+    dataRef <- cbind(dat$refs,dat$alts,dat$e1s+dat$e2s)
+    dataRef <- data.matrix(dataRef)
+    row.names(dataRef) <- dat$pos
+    dataRef <- dataRef[index, ]
+    n <- rowSums(dataRef)
+    oo <- lowerLimit <= n & n <= upperLimit
+    dataRef <- dataRef[oo,]
+    n <- n[oo]
+    return(dataRef)
 }
 	
 	
