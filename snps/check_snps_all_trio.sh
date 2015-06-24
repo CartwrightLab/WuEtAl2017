@@ -1,4 +1,4 @@
-#/bin/sh
+#!/bin/sh
 chromosome=$1
 line=$2     #range in chromosome
 isOriginalCaller=$3
