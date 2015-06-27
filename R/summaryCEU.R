@@ -56,7 +56,7 @@ fullTitleList<- c(
 
 p<- 8
 # for (p in 2:4){
-# for(p in 2:length(subNameList) ){
+# for(p in 1:length(subNameList) ){
 
 subName<- subNameList[p]
 fullTitle<- fullTitleList[p]
@@ -235,8 +235,8 @@ cat(sufix, file=fileMaxLikelihoodLatexTabel, fill=T, append=T)
 # dataRef<- parseData(dat, lowerLimit, upperLimit, dirtyData)
 
 
-p<- 4
-# for(p in 2:length(subNameList) ){
+p<- 8
+# for(p in 1:length(subNameList) ){
 
 subName<- subNameList[p]
 fullTitle<- fullTitleList[p]
@@ -262,7 +262,7 @@ sufix<- "\\hline\n\\end{tabular}"
 
 
 cat(prefix, file=fileSnpCountLatexTabel, fill=T)
-for(p in length(subNameList):2 ){
+for(p in length(subNameList):1 ){
 
     subName<- subNameList[p]
     fullTitle<- fullTitleList[p]
