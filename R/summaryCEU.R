@@ -12,6 +12,8 @@
 #suppressPackageStartupMessages(
 source("/home/steven/Postdoc2/Project_MDM/MiDiMu/R/summaryFunctions.R")
 
+source("/home/steven/Postdoc2/Project_MDM/MiDiMu/R/mdm.R")
+
 dirtyData <- FALSE
 upperLimit <- 150
 lowerLimit <- 10

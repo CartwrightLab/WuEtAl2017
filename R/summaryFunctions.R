@@ -1,4 +1,4 @@
-
+require(mc2d)
 
 extractMaxModel<- function(path){
 
@@ -243,4 +243,124 @@ mdmSingleLogLikeCore <- function(s,params) {
 		return(-1/0)
 	}
 	return(ll)
+}
+
+
+## copied from mdm.R
+
+# generate a random sample of DM observations
+# n = number of observations
+# m = a vector (or scalar) of observation sizes
+# phi = a vector (or scalar) of dispersion parameters
+# p = a matrix (or vector) of proportions
+#   if p is NULL, phi is assumed to contain alpha (scale) parameters
+rdm <- function(n, m, phi, p=NULL) {
+	params <- mdmParams(phi,p)
+	if(any(params[,1] < 0.0 | 1.0 < params[,1])) {
+		stop("phi must be in [0,1].")
+	}
+	if(any(params[,-1] <= 0.0 | 1.0 <= params[,-1])) {
+		stop("p must be in (0,1).")
+	}
+	params[params[,1] < .Machine$double.eps/2,1] <- .Machine$double.eps/2
+	p <- params[,-1,drop=FALSE]
+	
+	alphas <- mdmAlphas(params)
+	# choose initial 
+	y <- rmultinomial(n,1,p)
+	# update params, conditional on what has occurred
+	ny <- nrow(y)
+	na <- nrow(alphas)
+	if(na != ny) {
+		n1 <- ny %/% na
+		n2 <- ny %% na
+		u <- rep(seq_len(na),n1)
+		if(n2 > 0) {
+			u <- c(u,seq_len(n2))
+		}
+		a <- y + alphas[u,]
+	} else {
+		a <- y + alphas
+	}
+	# choose following
+	y+rmultinomial(n,m-1,rdirichlet(n,a))	
+}
+
+# generate a random sample of mixture of DM distributions
+# n = number of observations
+# m = a vector (or scalar) of observation sizes
+# f = the mixture proportions
+# phi = a vector (or scalar) of dispersion parameters
+# p = a matrix (or vector) of proportions
+#   if p is NULL, phi is assumed to contain alpha (scale) parameters
+rmdm <- function(n, m, f, phi, p=NULL) {
+	params <- mdmParams(phi,p)
+	k <- nrow(params)
+	if(length(f) != k) {
+		stop("The length of 'f' and number of rows in params must be equal.")
+	}
+	
+	# generate the mixture
+	q <- rmultinomial(1, n, f)
+	mix <- rep.int(seq_len(k), q)
+	mix <- sample(mix)
+	# generate the samples
+	x <- rdm(n,m,params[mix,])
+	# use the rownames to store the mixture categories
+	rownames(x) <- mix
+	x
+}
+
+# convert a parameter vector to alphas
+# v = a paramter vector contain phi and p
+mdmAlphas <- function(v,total=FALSE) {
+	if(is.vector(v)) {
+		v <- t(v)
+	}
+	phi <- v[,1]
+	p <- v[,-1,drop=FALSE]
+	at <- ((1.0-phi)/phi)
+	a <- p * at
+	colnames(a) <- paste("a", seq_len(ncol(a)),sep="")
+	if(total) {
+		a <- cbind(a,aa=at)
+	}
+	rownames(a) <- NULL
+	a
+}
+
+# convert parameters to a parameter vector
+# phi = a vector (or scalar) of dispersion parameters
+# p = a matrix (or vector) of proportions
+#   if p is NULL, phi is assumed to contain alpha (scale) parameters
+mdmParams <- function(phi, p=NULL) {
+	if(inherits(phi, "mdmParams")) {
+		return(phi)
+	}
+	if(!is.null(p)) {
+		if(is.vector(p)) {
+			p <- t(p)
+		}
+		p <- p/rowSums(p)
+	} else {
+		if(is.vector(phi)) {
+			a <- t(phi)
+		} else {
+			a <- phi
+		}
+		A <- rowSums(a)
+		phi <- 1.0/(A+1.0)
+		p <- a/A		
+	}
+
+	colnames(p) <- paste("p", seq_len(ncol(p)),sep="")
+	v <- cbind(phi,p)
+	class(v) <- "mdmParams"
+	v
+}
+
+`[.mdmParams` <- function(x, i, j, ...) {
+  y <- NextMethod(.Generic)
+  class(y) <- .Class
+  y
 }
