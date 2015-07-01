@@ -30,34 +30,24 @@ lowerLimit <- 10
 # } else {
 latexDir<- "/home/steven/Postdoc2/Project_MDM/DiriMulti/"
 pwd <- "/home/steven/Postdoc2/Project_MDM/CEU/"
-
 setwd(pwd)
 
 subNameList<- c(
-"CEU10_C10",
-"CEU10_C21",
-"CEU11_C10",
-"CEU11_C21",
-"CEU12_C10",
-"CEU12_C21",
-"CEU13_C10",
-"CEU13_C21"
+"CEU10_C10", "CEU10_C21",
+"CEU11_C10", "CEU11_C21",
+"CEU12_C10", "CEU12_C21",
+"CEU13_C10", "CEU13_C21"
 )
 
 fullTitleList<- c(
-"CEU 2010 Chromosome 10",
-"CEU 2010 Chromosome 21",
-"CEU 2011 Chromosome 10",
-"CEU 2011 Chromosome 21",
-"CEU 2012 Chromosome 10",
-"CEU 2012 Chromosome 21",
-"CEU 2013 Chromosome 10",
-"CEU 2013 Chromosome 21"
+"CEU 2010 Chromosome 10", "CEU 2010 Chromosome 21",
+"CEU 2011 Chromosome 10", "CEU 2011 Chromosome 21",
+"CEU 2012 Chromosome 10", "CEU 2012 Chromosome 21",
+"CEU 2013 Chromosome 10", "CEU 2013 Chromosome 21"
 )
 
 
 p<- 8
-# for (p in 2:4){
 # for(p in 1:length(subNameList) ){
 
 subName<- subNameList[p]
@@ -74,7 +64,7 @@ dataRef<- parseData(dataFull, lowerLimit, upperLimit, dirtyData)
 dataRefDirty<- parseData(dataFull, lowerLimit, upperLimit, dirtyData=TRUE)
 
 fileMaxLikelihoodTabel <- file.path(fullPath, "maxLikelihoodTableFull.RData")
-if ( file.exists(fileMaxLikelihoodTabel) ){
+if ( file.exists(fileMaxLikelihoodTabel) && loadData ){
     load(fileMaxLikelihoodTabel)
 } else{
     maxLikelihoodTable<- calculateEachLikelihood(maxModel, dataFull, lowerLimit=lowerLimit, upperLimit=upperLimit)#, numData=100)
