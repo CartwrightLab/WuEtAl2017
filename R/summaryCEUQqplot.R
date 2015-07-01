@@ -10,25 +10,17 @@ pwd <- "/home/steven/Postdoc2/Project_MDM/CEU/"
 setwd(pwd)
 
 subNameList<- c(
-"CEU10_C10",
-"CEU10_C21",
-"CEU11_C10",
-"CEU11_C21",
-"CEU12_C10",
-"CEU12_C21",
-"CEU13_C10",
-"CEU13_C21"
+"CEU10_C10", "CEU10_C21",
+"CEU11_C10", "CEU11_C21",
+"CEU12_C10", "CEU12_C21",
+"CEU13_C10", "CEU13_C21"
 )
 
 fullTitleList<- c(
-"CEU 2010 Chromosome 10",
-"CEU 2010 Chromosome 21",
-"CEU 2011 Chromosome 10",
-"CEU 2011 Chromosome 21",
-"CEU 2012 Chromosome 10",
-"CEU 2012 Chromosome 21",
-"CEU 2013 Chromosome 10",
-"CEU 2013 Chromosome 21"
+"CEU 2010 Chromosome 10", "CEU 2010 Chromosome 21",
+"CEU 2011 Chromosome 10", "CEU 2011 Chromosome 21",
+"CEU 2012 Chromosome 10", "CEU 2012 Chromosome 21",
+"CEU 2013 Chromosome 10", "CEU 2013 Chromosome 21"
 )
 
 
@@ -72,7 +64,7 @@ maxModel<- extractMaxModel(fullPath)
 whichIsDirty <- grepl("_[0-9]D",names(maxModel))
 header<- gsub("hets_" , "", names(maxModel) )
 
-qqplotFile<- file.path(latexDir, paste0("qqplots_", subName, ".pdf") )
+qqplotFile<- file.path(latexDir, paste0("qqPlots_", subName, ".pdf") )
 
 
 pdf(file=qqplotFile, width=12, height=6)
@@ -111,8 +103,7 @@ for( m in 1:length(maxModel)) {
                     phi=mModel$params[,1], p=mModel$params[,2:4])
         z <- b/rowSums(b)
         ff<- freqDataRef    
-    }
-    else{
+    } else{
 #         b <- rmdm(length(rowSumDataRefDirty), rowSumDataRefDirty, mModel$f,
 #                     phi=mModel$params[,1], p=mModel$params[,2:4])
 #         ff<- freqDataRefDirty

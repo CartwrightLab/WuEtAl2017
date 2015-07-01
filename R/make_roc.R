@@ -1,47 +1,131 @@
-source("mdm.R")
+require(ROCR)
+source("/home/steven/Postdoc2/Project_MDM/MiDiMu/R/summaryFunctions.R")
 
-## Note the file I used.
-dat <- read.delim("base_counts_hets_878_byref_flag_filtered.txt",header=T)
-load("search_em.RData")
+upperLimit <- 150
+lowerLimit <- 10
 
-x <- cbind(dat$refs,dat$alts,dat$e1s+dat$e2s)
-x <- data.matrix(x)
-row.names(x) <- dat$pos
-## This is the Clean Data
-#x <- x[dat$callby == 2 & dat$snp == 1 & dat$snpdif == 0,]
+latexDir<- "/home/steven/Postdoc2/Project_MDM/DiriMulti/"
+pwd <- "/home/steven/Postdoc2/Project_MDM/CEU/"
+setwd(pwd)
 
-## This is the Dirty Data including "g" a grouping factor
-x <- x[dat$callby == 2,]
-g <- (dat$snp == 1 & dat$snpdif == 0)[dat$callby==2]
+subNameList<- c(
+"CEU10_C10", "CEU10_C21",
+"CEU11_C10", "CEU11_C21",
+"CEU12_C10", "CEU12_C21",
+"CEU13_C10", "CEU13_C21"
+)
 
-n <- rowSums(x)
-oo <- n > 10 & n < 150
-x <- x[oo,]
-n <- n[oo]
-g <- ifelse(g[oo],1,2)
-
-y <- x/n
-nn <- sum(n)
-xx <- colSums(x)
-m2
-
-m2<-res2.dirty[[1]]
-ll<-mdm.ll(x,m2$param.p,m2$param.a)
+fullTitleList<- c(
+"CEU 2010 Chromosome 10", "CEU 2010 Chromosome 21",
+"CEU 2011 Chromosome 10", "CEU 2011 Chromosome 21",
+"CEU 2012 Chromosome 10", "CEU 2012 Chromosome 21",
+"CEU 2013 Chromosome 10", "CEU 2013 Chromosome 21"
+)
 
 
-m2<-maxModel[[6]] 
-ll<-mdm.ll(x,m2$f, mdmAlphas(m2$params))
-p<-ll$p.row[,1]
-p1<-p[g==1]
-p2<-p[g==2]
-
-# g <- ifelse(g[oo],1,2)
-pred<- prediction(p, g)
-perf <- performance(pred,"tpr","fpr")
-performance(pred,"auc")
-plot(perf)
+likelihoodToProportion<- function(ml, p){
+    eml<- t(t(exp(ml))*p)
+    peml<- eml/rowSums(eml)
+    return (peml)
+}
 
 
+allAUC<- matrix(nrow=length(subNameList), ncol=6)
+
+p<- 8
+# for(p in 1:length(subNameList) ){
+
+subName<- subNameList[p]
+fullTitle<- fullTitleList[p]
+subFolders <- paste0(subName, "/original/base_count/")
+fullPath <- file.path(pwd, subFolders)
+
+# setwd(fullPath)
+maxModel<- extractMaxModel(fullPath)
+
+hets_byref<- list.files(path=fullPath, pattern="hets.+byref") 
+dataFull <- read.delim(paste(fullPath, hets_byref, sep=""), header=TRUE)
+# dataRef<- parseData(dataFull, lowerLimit, upperLimit, dirtyData)
+dataRefDirty<- parseData(dataFull, lowerLimit, upperLimit, dirtyData=TRUE)
+
+fileMaxLikelihoodTabel <- file.path(fullPath, "maxLikelihoodTableFull.RData")
+if ( file.exists(fileMaxLikelihoodTabel) ){
+    load(fileMaxLikelihoodTabel)
+} else{
+    stop(paste0("File does not exist: ", fileMaxLikelihoodTabel))
+}
+
+# refIndex<- (dataFull$pos %in% as.numeric( rownames(dataRef)) )
+# snpTfClean <- (dataFull$snp == 1 & dataFull$snpdif == 0)[refIndex]
+refDirtyIndex<- (dataFull$pos %in% as.numeric( rownames(dataRefDirty)) )
+snpTf <- (dataFull$snp == 1 & dataFull$snpdif == 0)[refDirtyIndex]
+
+whichIsDirty <- grepl("_[0-9]D",names(maxLikelihoodTable))
+header<- gsub("hets_" , "", names(maxLikelihoodTable) )
+
+rocPlotFile<- file.path(latexDir, paste0("rocPlots_", subName, ".pdf") )
+pdf(file=rocPlotFile, width=12, height=8)
+par(mar=c(3,3,2,1), mgp=c(1.75, 0.6, 0), mfrow=c(2,3), 
+    cex.main=1.2^3, cex.lab=1.2^2, oma=c(0,0,2.5,0) )
+
+for( m in 3:length(maxLikelihoodTable)) {
+    
+    if( whichIsDirty[m]){
+        maxIndex<- which.max(maxModel[[m]]$f)
+        
+        ml<- maxLikelihoodTable[[m]]
+        classProp<- likelihoodToProportion(ml, maxModel[[m]]$f)
+        pred<- prediction(classProp[,maxIndex], snpTf)
+
+#         ll<-mdm.ll(dataRefDirty, maxModel[[m]]$f, mdmAlphas(maxModel[[m]]$params))
+#         pred<- prediction(ll$p.row[,maxIndex], snpTf)
+
+        perfRoc <- performance(pred, "tpr", "fpr")
+        perfAuc <- performance(pred,"auc")
+        allAUC[p, m/2] <- perfAuc@y.values[[1]]
+        auc<- formatC(allAUC[p, m/2])
+        plot(perfRoc, main=paste("ROC curve", header[m], "AUC:",auc), xlab="1 - specificity", ylab="Sensitivity")
+        
+    }
+}
+mtext(fullTitle, outer=T, cex=2, line=0)
+
+dev.off()
+
+
+# }  ## end for 
+
+if(NCOL(allAUC) == 6){
+    allAUC <- allAUC[,2:6]
+}
+
+
+
+##### AUC table #####
+# header<- names(latexTable)
+# header<- gsub("hets_" , "", header)
+# header<- gsub("_" , "M", header)
+
+prefix<- paste0("\\begin{tabular}{|c|c|c|c|c|c|}
+    \\hline \\multicolumn{6}{|c|}{Area under ROC curve}\\\\ \\hline
+    Dataset & 2 Components & 3 Components & 4 Components & 5 Components & 6 Components  \\\\ \\hline")
+
+sufix<- "\\end{tabular}"
+
+allAucString<- formatC(allAUC, format="f", digits=3)
+allAucLatex<- apply(allAucString,1,function(x){paste0(x, collapse=" & ")})
+
+fileAucTable<- file.path(latexDir, paste0("AUC_summary.tex") )
+dataName<- gsub("_", "", subNameList)
+cat(prefix, file=fileAucTable, fill=T)
+for(i in 1:length(subNameList) ){
+    
+    temp<- paste0(dataName[i], " & ", allAucLatex[i], " \\\\ \\hline")
+    cat(temp, file=fileAucTable, fill=T, append=T)
+}
+cat(sufix, file=fileAucTable, fill=T, append=T)
+# write.table(latexTableFull, file=file.path(fullPath, "latxTable"), quote=F, row.names=F)
+    
 
 
 
@@ -49,16 +133,17 @@ plot(perf)
 
 
 
+##### make sure the methods are the same
+require("ROCR")
 
 m2<- maxModel[[6]]
-
 x<- dataRefDirty
 source("/home/steven/Postdoc2/Project_MDM/RachelCode/dm.R")
 ll<-mdm.ll(x,m2$f, mdmAlphas(m2$params))
+
 #
 ml<- maxLikelihoodTable[[6]]
 pp<- m2$f
-
 #
 pr<- ml
 p<- pp
@@ -72,32 +157,18 @@ all.equal(sum(rss), ll$ll)
 all.equal(rss, ll$ll.row)
 all.equal(pr/rs, ll$p.row)
 
-#
-
-eml<- t(apply(ml,1,function(x){ exp(x)*p }))
-#eml<- t(t(exp(ml))*p)
+# eml<- t(apply(ml,1,function(x){ exp(x)*p }))
+eml<- t(t(exp(ml))*p)
 peml<- eml/rowSums(eml)
 all.equal(peml, ll$p.row)
 
+classProp<- likelihoodToProportion(ml, p)
+all.equal(classProp, ll$p.row)
 
-#
-dat<- dataFull
-g <- (dat$snp == 1 & dat$snpdif == 0)[dat$callby==2]
+#     ll<-mdm.ll(dataRefDirty, m2$f, mdmAlphas(m2$params))
+#     pred<- prediction(ll$p.row[,3], classicifation)
+#     pred<- prediction(peml[,3], snpTf)
+        # ll<-mdm.ll(dataRefDirty, m2$f, mdmAlphas(m2$params))
+        # pred<- prediction(ll$p.row[,3], classicifation)
 
 
-p<-ll$p.row[,1]
-p1<-p[g==1]
-p2<-p[g==2]
-
-# g <- ifelse(g[oo],1,2)
-require("ROCR")
-x <- cbind(dat$refs,dat$alts,dat$e1s+dat$e2s)
-x <- data.matrix(x)
-row.names(x) <- dat$pos
-x <- x[dat$callby == 2,]
-
-ll<-mdm.ll(x, m2$f, mdmAlphas(m2$params))
-pred<- prediction(ll$p.row[,3], g)
-perf <- performance(pred,"tpr","fpr")
-performance(pred,"auc")
-plot(perf)
