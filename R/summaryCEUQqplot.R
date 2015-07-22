@@ -1,43 +1,46 @@
 #suppressPackageStartupMessages(
 source("/home/steven/Postdoc2/Project_MDM/MiDiMu/R/summaryFunctions.R")
 
+isCEU <- FALSE
+isCEU <- TRUE
+
+
 dirtyData <- FALSE
 upperLimit <- 150
 lowerLimit <- 10
 
 latexDir<- "/home/steven/Postdoc2/Project_MDM/DiriMulti/"
-pwd <- "/home/steven/Postdoc2/Project_MDM/CEU/"
-setwd(pwd)
 
-subNameList<- c(
-"CEU10_C10", "CEU10_C21",
-"CEU11_C10", "CEU11_C21",
-"CEU12_C10", "CEU12_C21",
-"CEU13_C10", "CEU13_C21"
-)
+if(isCEU){
+    pwd <- "/home/steven/Postdoc2/Project_MDM/CEU/"
+    subNameList<- c(
+    "CEU10_C10", "CEU10_C21",
+    "CEU11_C10", "CEU11_C21",
+    "CEU12_C10", "CEU12_C21",
+    "CEU13_C10", "CEU13_C21"
+    )
 
-fullTitleList<- c(
-"CEU 2010 Chromosome 10", "CEU 2010 Chromosome 21",
-"CEU 2011 Chromosome 10", "CEU 2011 Chromosome 21",
-"CEU 2012 Chromosome 10", "CEU 2012 Chromosome 21",
-"CEU 2013 Chromosome 10", "CEU 2013 Chromosome 21"
-)
+    fullTitleList<- c(
+    "CEU 2010 Chromosome 10", "CEU 2010 Chromosome 21",
+    "CEU 2011 Chromosome 10", "CEU 2011 Chromosome 21",
+    "CEU 2012 Chromosome 10", "CEU 2012 Chromosome 21",
+    "CEU 2013 Chromosome 10", "CEU 2013 Chromosome 21"
+    )
+} else {
+    pwd <- "/home/steven/Postdoc2/Project_MDM/CHM1/"
+    subNameList<- c(
+    "CHM1_C10", "CHM1_C21"
+    )
 
-
-plotqq<- function(z, ff, outerText){
-    mains = c("Reference Allele", "Alternate Allele", "Error")
-
-    for(i in 1:3) {
-        qqplot(z[,i],ff[,i],xlim=c(0,1),ylim=c(0,1),xlab="Estimated Frequency",ylab="Observed Frequency",main=mains[i])
-        abline(0,1)
-    #   print(ad.stat.k(ff[,i],z[,i]))
-    }
-    mtext(outerText, side=3, outer=T, line=-2, cex=2)
-
+    fullTitleList<- c(
+    "CHM1 Chromosome 10", "CHM1 Chromosome 21"
+    )
 }
+setwd(pwd)
 
 
 p<- 8
+p<- 1
 # for (p in 2:4){
 # for(p in 1:length(subNameList) ){
 
@@ -49,8 +52,8 @@ fullPath <- file.path(pwd, subFolders)
 # setwd(fullPath)
 hets_byref<- list.files(path=fullPath, pattern="hets.+byref") 
 dataFull <- read.delim(paste(fullPath, hets_byref, sep=""), header=TRUE)
-dataRef<- parseData(dataFull, lowerLimit, upperLimit, dirtyData)
-dataRefDirty<- parseData(dataFull, lowerLimit, upperLimit, dirtyData=TRUE)
+dataRef<- parseData(dataFull, lowerLimit, upperLimit, dirtyData, isCEU)
+dataRefDirty<- parseData(dataFull, lowerLimit, upperLimit, dirtyData=TRUE, isCEU)
 
 rowSumDataRef<- rowSums(dataRef)
 colSumDataRef<- colSums(dataRef)

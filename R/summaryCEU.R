@@ -9,16 +9,6 @@
 ###
 ##########################
 
-#suppressPackageStartupMessages(
-source("/home/steven/Postdoc2/Project_MDM/MiDiMu/R/summaryFunctions.R")
-
-source("/home/steven/Postdoc2/Project_MDM/MiDiMu/R/mdm.R")
-
-dirtyData <- FALSE
-upperLimit <- 150
-lowerLimit <- 10
-
-
 # pid <- Sys.getpid()
 # args <- commandArgs(trailingOnly=TRUE)
 
@@ -28,26 +18,54 @@ lowerLimit <- 10
 # if(dirtyData) {
 # 	k <- as.numeric(sub("[Dd]$","",k))
 # } else {
+#suppressPackageStartupMessages(
+source("/home/steven/Postdoc2/Project_MDM/MiDiMu/R/summaryFunctions.R")
+
+# source("/home/steven/Postdoc2/Project_MDM/MiDiMu/R/mdm.R")
+
+isCEU <- FALSE
+isCEU <- TRUE
+
+dirtyData <- FALSE
+upperLimit <- 150
+lowerLimit <- 10
+
+
+
 latexDir<- "/home/steven/Postdoc2/Project_MDM/DiriMulti/"
-pwd <- "/home/steven/Postdoc2/Project_MDM/CEU/"
+
+
+if(isCEU){
+    pwd <- "/home/steven/Postdoc2/Project_MDM/CEU/"
+    subNameList<- c(
+    "CEU10_C10", "CEU10_C21",
+    "CEU11_C10", "CEU11_C21",
+    "CEU12_C10", "CEU12_C21",
+    "CEU13_C10", "CEU13_C21"
+    )
+
+    fullTitleList<- c(
+    "CEU 2010 Chromosome 10", "CEU 2010 Chromosome 21",
+    "CEU 2011 Chromosome 10", "CEU 2011 Chromosome 21",
+    "CEU 2012 Chromosome 10", "CEU 2012 Chromosome 21",
+    "CEU 2013 Chromosome 10", "CEU 2013 Chromosome 21"
+    )
+} else {
+    pwd <- "/home/steven/Postdoc2/Project_MDM/CHM1/"
+    subNameList<- c(
+    "CHM1_C10", "CHM1_C21"
+    )
+
+    fullTitleList<- c(
+    "CHM1 Chromosome 10", "CHM1 Chromosome 21"
+    )
+}
 setwd(pwd)
-
-subNameList<- c(
-"CEU10_C10", "CEU10_C21",
-"CEU11_C10", "CEU11_C21",
-"CEU12_C10", "CEU12_C21",
-"CEU13_C10", "CEU13_C21"
-)
-
-fullTitleList<- c(
-"CEU 2010 Chromosome 10", "CEU 2010 Chromosome 21",
-"CEU 2011 Chromosome 10", "CEU 2011 Chromosome 21",
-"CEU 2012 Chromosome 10", "CEU 2012 Chromosome 21",
-"CEU 2013 Chromosome 10", "CEU 2013 Chromosome 21"
-)
 
 
 p<- 8
+p<- 1
+
 # for(p in 1:length(subNameList) ){
 
 subName<- subNameList[p]
@@ -137,7 +155,7 @@ header<- gsub("hets_" , "", header)
 header<- gsub("_" , "M", header)
 
 prefix<- paste0("\\begin{tabular}{|c|ccc|ccc|c|c|c|}
-    \\hline \\multicolumn{10}{|c|}{Parameter estimates",fullTitle,"}\\\\ \\hline
+    \\hline \\multicolumn{10}{|c|}{Parameter estimates ",fullTitle,"}\\\\ \\hline
     Model & $\\pi_{ref}$ & $\\pi_{alt}$ & $\\pi_{err}$ & $\\alpha_{ref}$ & $\\alpha_{alt}$ & $\\alpha_{err}$ & $\\varphi$ &  $p$ & ML-P \\\\ \\hline")
 
 sufix<- "\\end{tabular}"
@@ -210,7 +228,7 @@ cat(sufix, file=fileMaxLikelihoodLatexTabel, fill=T, append=T)
 
 
 
-
+# }  ## end for loop
 
 
     
@@ -230,22 +248,26 @@ cat(sufix, file=fileMaxLikelihoodLatexTabel, fill=T, append=T)
 p<- 8
 # for(p in 1:length(subNameList) ){
 
-subName<- subNameList[p]
-fullTitle<- fullTitleList[p]
-subFolders <- paste0(subName, "/original/base_count/")
-fullPath <- file.path(pwd, subFolders)
-
-setwd(fullPath)
-maxModel<- extractMaxModel(fullPath)
-
-hets_byref<- list.files(path=fullPath, pattern="hets.+byref") 
-dat <- read.delim(paste(fullPath, hets_byref, sep=""), header=TRUE)
+# subName<- subNameList[p]
+# fullTitle<- fullTitleList[p]
+# subFolders <- paste0(subName, "/original/base_count/")
+# fullPath <- file.path(pwd, subFolders)
+# 
+# setwd(fullPath)
+# maxModel<- extractMaxModel(fullPath)
+# 
+# hets_byref<- list.files(path=fullPath, pattern="hets.+byref") 
+# dat <- read.delim(paste(fullPath, hets_byref, sep=""), header=TRUE)
 # dataRef<- parseData(dat, lowerLimit, upperLimit, dirtyData)
 # dataRefDirty<- parseData(dat, lowerLimit, upperLimit, dirtyData=TRUE)
 
 ## SNP count
+if(isCEU){
+    fileSnpCountLatexTabel <- file.path(latexDir, paste0("snpCountLatexTable.tex") )
+} else {
+    fileSnpCountLatexTabel <- file.path(latexDir, paste0("snpCountLatexTable_CHM1.tex") )
+}
 
-fileSnpCountLatexTabel <- file.path(latexDir, paste0("snpCountLatexTable.tex") )
 
 prefix<- paste0("\\begin{tabular}{|c|c|c|c|c|}
     \\hline \\multicolumn{5}{|c|}{", "" ," } \\\\ \\hline
@@ -266,8 +288,13 @@ for(p in length(subNameList):1 ){
     dat <- read.delim(paste(fullPath, hets_byref, sep=""), header=TRUE)
 
     name2<- gsub("_" , " ", subName)
-    snpCount <- c(name2, table(dat$callby)[c(1,3,2)], sum( (dat$callby == 2 & (dat$snp == 1 & dat$snpdif == 0)) ) )  
-
+    
+    if(isCEU){
+        snpCount <- c(name2, table(dat$callby)[c(1,3,2)], sum( (dat$callby == 2 & (dat$snp == 1 & dat$snpdif == 0)) ) )  
+    } else {
+        snpCount <- c(name2, table(dat$callby)[1], 0,0, sum( (dat$callby == 1 & (dat$snp == 1 & dat$snpdif == 0)) ) )  
+    }
+ 
     snpLatex <- paste(snpCount, collapse=" & ")
     snpLatex <- paste(snpLatex ,"\\\\")
     cat(snpLatex, file=fileSnpCountLatexTabel, fill=T, append=T)

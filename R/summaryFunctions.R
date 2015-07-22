@@ -29,11 +29,11 @@ extractMaxModel<- function(path){
 
 
 
-calculateEachLikelihood<- function(maxModel, fullData, lowerLimit, upperLimit, numData=NULL){
+calculateEachLikelihood<- function(maxModel, fullData, lowerLimit, upperLimit, numData=NULL, isCEU=TRUE){
 
     whichIsDirty <- grepl("_[0-9]D",names(maxModel))
-    dataRef<- parseData(fullData, lowerLimit, upperLimit, dirtyData)
-    dataRefDirty<- parseData(fullData, lowerLimit, upperLimit, dirtyData=TRUE)
+    dataRef<- parseData(fullData, lowerLimit, upperLimit, dirtyData, CHM1)
+    dataRefDirty<- parseData(fullData, lowerLimit, upperLimit, dirtyData=TRUE, isCEU)
 
     maxLikelihood <- vector(length=length(maxModel), mode="list")
     names(maxLikelihood)<- names(maxModel)
@@ -94,11 +94,16 @@ calculateEachLikelihoodOneModel<- function(model, data){
 }
 
 
-parseData<- function(dat, lowerLimit, upperLimit, dirtyData){
+parseData<- function(dat, lowerLimit, upperLimit, dirtyData, isCEU=TRUE){
     dataRef <- cbind(dat$refs,dat$alts,dat$e1s+dat$e2s)
     dataRef <- data.matrix(dataRef)
     row.names(dataRef) <- dat$pos
-    dataRef <- dataRef[dat$callby == 2 & ((dat$snp == 1 & dat$snpdif == 0) | dirtyData), ]
+    if(isCEU){
+        dataRef <- dataRef[dat$callby == 2 & ((dat$snp == 1 & dat$snpdif == 0) | dirtyData), ]
+    } else {
+        dataRef <- dataRef[dat$callby == 1 & ((dat$snp == 1 & dat$snpdif == 0) | dirtyData), ]
+    }
+    
     n <- rowSums(dataRef)
     oo <- lowerLimit <= n & n <= upperLimit
     dataRef <- dataRef[oo,]
@@ -140,7 +145,21 @@ parseDataIndex<- function(dat, index, lowerLimit, upperLimit){
     return(dataRef)
 }
 	
-	
+
+plotqq<- function(z, ff, outerText){
+    mains = c("Reference Allele", "Alternate Allele", "Error")
+
+    for(i in 1:3) {
+        qqplot(z[,i],ff[,i],xlim=c(0,1),ylim=c(0,1),xlab="Estimated Frequency",ylab="Observed Frequency",main=mains[i])
+        abline(0,1)
+    #   print(ad.stat.k(ff[,i],z[,i]))
+    }
+    mtext(outerText, side=3, outer=T, line=-2, cex=2)
+
+}
+
+
+
 ######################################################################
 ##### Modified from EM script
 ######################################################################
@@ -364,3 +383,4 @@ mdmParams <- function(phi, p=NULL) {
   class(y) <- .Class
   y
 }
+
