@@ -1,26 +1,43 @@
 require(ROCR)
 source("/home/steven/Postdoc2/Project_MDM/MiDiMu/R/summaryFunctions.R")
 
+
+isCEU <- FALSE
+isCEU <- TRUE
+
+
+dirtyData <- FALSE
 upperLimit <- 150
 lowerLimit <- 10
 
 latexDir<- "/home/steven/Postdoc2/Project_MDM/DiriMulti/"
-pwd <- "/home/steven/Postdoc2/Project_MDM/CEU/"
+
+if(isCEU){
+    pwd <- "/home/steven/Postdoc2/Project_MDM/CEU/"
+    subNameList<- c(
+    "CEU10_C10", "CEU10_C21",
+    "CEU11_C10", "CEU11_C21",
+    "CEU12_C10", "CEU12_C21",
+    "CEU13_C10", "CEU13_C21"
+    )
+
+    fullTitleList<- c(
+    "CEU 2010 Chromosome 10", "CEU 2010 Chromosome 21",
+    "CEU 2011 Chromosome 10", "CEU 2011 Chromosome 21",
+    "CEU 2012 Chromosome 10", "CEU 2012 Chromosome 21",
+    "CEU 2013 Chromosome 10", "CEU 2013 Chromosome 21"
+    )
+} else {
+    pwd <- "/home/steven/Postdoc2/Project_MDM/CHM1/"
+    subNameList<- c(
+    "CHM1_C10", "CHM1_C21"
+    )
+
+    fullTitleList<- c(
+    "CHM1 Chromosome 10", "CHM1 Chromosome 21"
+    )
+}
 setwd(pwd)
-
-subNameList<- c(
-"CEU10_C10", "CEU10_C21",
-"CEU11_C10", "CEU11_C21",
-"CEU12_C10", "CEU12_C21",
-"CEU13_C10", "CEU13_C21"
-)
-
-fullTitleList<- c(
-"CEU 2010 Chromosome 10", "CEU 2010 Chromosome 21",
-"CEU 2011 Chromosome 10", "CEU 2011 Chromosome 21",
-"CEU 2012 Chromosome 10", "CEU 2012 Chromosome 21",
-"CEU 2013 Chromosome 10", "CEU 2013 Chromosome 21"
-)
 
 
 likelihoodToProportion<- function(ml, p){
@@ -46,7 +63,7 @@ maxModel<- extractMaxModel(fullPath)
 hets_byref<- list.files(path=fullPath, pattern="hets.+byref") 
 dataFull <- read.delim(paste(fullPath, hets_byref, sep=""), header=TRUE)
 # dataRef<- parseData(dataFull, lowerLimit, upperLimit, dirtyData)
-dataRefDirty<- parseData(dataFull, lowerLimit, upperLimit, dirtyData=TRUE)
+dataRefDirty<- parseData(dataFull, lowerLimit, upperLimit, dirtyData=TRUE, isCEU)
 
 fileMaxLikelihoodTabel <- file.path(fullPath, "maxLikelihoodTableFull.RData")
 if ( file.exists(fileMaxLikelihoodTabel) ){
@@ -93,11 +110,7 @@ mtext(fullTitle, outer=T, cex=2, line=0)
 dev.off()
 
 
-# }  ## end for 
-
-if(NCOL(allAUC) == 6){
-    allAUC <- allAUC[,2:6]
-}
+# }  ## end for loop 
 
 
 
@@ -105,6 +118,9 @@ if(NCOL(allAUC) == 6){
 # header<- names(latexTable)
 # header<- gsub("hets_" , "", header)
 # header<- gsub("_" , "M", header)
+if(NCOL(allAUC) == 6){
+    allAUC <- allAUC[,2:6]
+}
 
 prefix<- paste0("\\begin{tabular}{|c|c|c|c|c|c|}
     \\hline \\multicolumn{6}{|c|}{Area under ROC curve}\\\\ \\hline
@@ -115,7 +131,11 @@ sufix<- "\\end{tabular}"
 allAucString<- formatC(allAUC, format="f", digits=3)
 allAucLatex<- apply(allAucString,1,function(x){paste0(x, collapse=" & ")})
 
-fileAucTable<- file.path(latexDir, paste0("AUC_summary.tex") )
+if(isCEU){
+    fileAucTable<- file.path(latexDir, paste0("AUC_summary.tex") )
+} else{
+    fileAucTable<- file.path(latexDir, paste0("AUC_summary_CHM1.tex") )
+}
 dataName<- gsub("_", "", subNameList)
 cat(prefix, file=fileAucTable, fill=T)
 for(i in 1:length(subNameList) ){
