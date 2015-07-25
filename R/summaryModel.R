@@ -29,7 +29,7 @@ isCEU <- TRUE
 dirtyData <- FALSE
 upperLimit <- 150
 lowerLimit <- 10
-
+loadData<- TRUE
 
 
 latexDir<- "/home/steven/Postdoc2/Project_MDM/DiriMulti/"
