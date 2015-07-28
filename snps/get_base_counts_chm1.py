@@ -132,8 +132,10 @@ for filename in outfilenames:
             open(result_dir+'base_counts_'+filename+'_'+person+'_byref_flag_filtered.txt','w') as fileout2:
     
     
-        fileout1.write('pos'+"\t"+'ref'+"\t"+'alt'+"\t"+'As'+"\t"+'Cs'+"\t"+'Gs'+"\t"+'Ts'+"\t"+'callby'+"\t"+'snp'+"\t"+'snpdif'+"\t"+'Ex'+"\n")
-        fileout2.write('pos'+"\t"+'ref'+"\t"+'alt'+"\t"+'refs'+"\t"+'alts'+"\t"+'e1s'+"\t"+'e2s'+"\t"+'callby'+"\t"+'snp'+"\t"+'snpdif'+"\t"+'Ex'+"\n")
+        fileout1.write('pos'+"\t"+'ref'+"\t"+'alt'+"\t"+'As'+"\t"+'Cs'+"\t"+'Gs'+"\t"+'Ts'+"\t"+
+                        'callby'+"\t"+'snp'+"\t"+'snpdif'+"\t"+'Ex'+"\n")
+        fileout2.write('pos'+"\t"+'ref'+"\t"+'alt'+"\t"+'refs'+"\t"+'alts'+"\t"+'e1s'+"\t"+'e2s'+"\t"+
+                        'callby'+"\t"+'snp'+"\t"+'snpdif'+"\t"+'Ex'+"\n")
         
         # pileups=open('chr'+chr+'_'+person+'.pileups','r')
         # pileups=open(pileupFile,'r')
@@ -164,11 +166,16 @@ for filename in outfilenames:
                             baselist.append(basecounts[ref])
                             del basecounts[ref]
                             del basecounts['ref']
-                            if allcallsdict[filename][pos].alt is not ref:
-                                baselist.append(basecounts[allcallsdict[filename][pos].alt])
-                                del basecounts[allcallsdict[filename][pos].alt]
+                            
+                            #if allcallsdict[filename][pos].alt is not ref:
+                            #    baselist.append(basecounts[allcallsdict[filename][pos].alt])
+                            #    del basecounts[allcallsdict[filename][pos].alt]
+                            baselist.append(0) ## het is always 0
+                            sum_error = 0
                             for k,v in basecounts.iteritems():
-                                baselist.append(v)        
+                                sum_error += v
+                            baselist.append(v) # err_1 = sum of all other terms
+                            baselist.append(0) # err_2 = 0 
                             fileout2.write(pos+"\t"+ref+"\t"+allcallsdict[filename][pos].alt+"\t"+
                                            str(baselist[0])+"\t"+str(baselist[1])+"\t"+
                                            str(baselist[2])+"\t"+str(baselist[3])+"\t"+
