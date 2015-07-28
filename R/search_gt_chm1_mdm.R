@@ -86,7 +86,7 @@ if(dirty_data) {
 
 dat <- read.delim(args[3],header=TRUE)
 
-sub_name <- gsub("base_counts_(.*_[CEU|CHM1].*)_878_byref_.*txt","\\1" ,args[3])
+sub_name <- gsub("base_counts_(.*_CHM1.*)_byref_.*txt","\\1" ,args[3])
 if(sub_name == args[3]){
 	message("Can't find the pattern: ", sub_name)
 	sub_name <- ""
@@ -96,7 +96,7 @@ if(sub_name == args[3]){
 x <- cbind(dat$refs,dat$alts,dat$e1s+dat$e2s)
 x <- data.matrix(x)
 row.names(x) <- dat$pos
-x <- x[dat$callby == 2 & ((dat$snp == 1 & dat$snpdif == 0) | dirty_data), ]
+x <- x[dat$callby == 1 & ((dat$snp == 1 & dat$snpdif == 0) | dirty_data), ]
 n <- rowSums(x)
 oo <- lowerLimit <= n & n <= upperLimit
 x <- x[oo,]

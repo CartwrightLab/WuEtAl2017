@@ -8,7 +8,7 @@
 numTrial=1000
 
 MdmFile="/home/steven/Project_MDM/MiDiMu/R/mdm.R"
-GtMdm="/home/steven/Project_MDM/MiDiMu/R/search-gt-mdm.R"
+GtMdm="/home/steven/Project_MDM/MiDiMu/R/search_gt_chm1_mdm.R"
 
 #if [ -h $0 ]
 #then
