@@ -74,18 +74,24 @@ subFolders <- paste0(subName, "/original/base_count/")
 fullPath <- file.path(pwd, subFolders)
 
 setwd(fullPath)
-maxModel<- extractMaxModel(fullPath)
+maxModel<- extractMaxModel(fullPath, isCEU)
 
-hets_byref<- list.files(path=fullPath, pattern="hets.+byref") 
+if(isCEU){
+    hets_byref<- list.files(path=fullPath, pattern="hets.+byref") 
+} else{
+    hets_byref<- file.path("base_count_meta_subsample") 
+}
+
+
 dataFull <- read.delim(paste(fullPath, hets_byref, sep=""), header=TRUE)
-dataRef<- parseData(dataFull, lowerLimit, upperLimit, dirtyData)
-dataRefDirty<- parseData(dataFull, lowerLimit, upperLimit, dirtyData=TRUE)
+dataRef<- parseData(dataFull, lowerLimit, upperLimit, dirtyData, isCEU=isCEU)
+dataRefDirty<- parseData(dataFull, lowerLimit, upperLimit, dirtyData=TRUE, isCEU=isCEU)
 
 fileMaxLikelihoodTabel <- file.path(fullPath, "maxLikelihoodTableFull.RData")
 if ( file.exists(fileMaxLikelihoodTabel) && loadData ){
     load(fileMaxLikelihoodTabel)
 } else{
-    maxLikelihoodTable<- calculateEachLikelihood(maxModel, dataFull, lowerLimit=lowerLimit, upperLimit=upperLimit)#, numData=100)
+    maxLikelihoodTable<- calculateEachLikelihood(maxModel, dataFull, lowerLimit=lowerLimit, upperLimit=upperLimit, isCEU=isCEU)#, numData=100)
     attr(maxLikelihoodTable, "title")<- subName
     save(maxLikelihoodTable, file=file.path(fullPath, "maxLikelihoodTableFull.RData"))
 }

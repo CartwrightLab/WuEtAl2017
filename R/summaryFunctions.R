@@ -1,8 +1,11 @@
 require(mc2d)
 
-extractMaxModel<- function(path){
-
-	listRData<- list.files(path=path, pattern="hets.+RData") 
+extractMaxModel<- function(path, isCEU=True){
+        if(isCEU){
+            listRData<- list.files(path=path, pattern="hets.+RData") 
+        } else {
+           listRData<- list.files(path=path, pattern="homos_alt.+RData") 
+        }
 	maxModel<- list()
 
 	for(i in 1:length(listRData)){
@@ -32,7 +35,7 @@ extractMaxModel<- function(path){
 calculateEachLikelihood<- function(maxModel, fullData, lowerLimit, upperLimit, numData=NULL, isCEU=TRUE){
 
     whichIsDirty <- grepl("_[0-9]D",names(maxModel))
-    dataRef<- parseData(fullData, lowerLimit, upperLimit, dirtyData, CHM1)
+    dataRef<- parseData(fullData, lowerLimit, upperLimit, dirtyData=FALSE, isCEU)
     dataRefDirty<- parseData(fullData, lowerLimit, upperLimit, dirtyData=TRUE, isCEU)
 
     maxLikelihood <- vector(length=length(maxModel), mode="list")
