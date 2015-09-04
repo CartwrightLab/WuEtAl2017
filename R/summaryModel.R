@@ -245,9 +245,9 @@ cat(sufix, file=fileMaxLikelihoodLatexTabel, fill=T, append=T)
 # 
 # }
 
-#######################################
+##############################################################################
 ##### FP. in child not NOT in human
-###############################
+##############################################################################
 # dataRef<- parseData(dat, lowerLimit, upperLimit, dirtyData)
 
 
@@ -275,9 +275,11 @@ if(isCEU){
 }
 
 
-prefix<- paste0("\\begin{tabular}{|c|c|c|c|c|}
-    \\hline \\multicolumn{5}{|c|}{", "" ," } \\\\ \\hline
-    Dataset & Method (1) & Method (2) & Both methods & True heterozygotes \\\\ \\hline")
+prefix<- paste0("\\begin{tabular}{|c|c|c|c|c|c|}
+    \\hline \\multicolumn{6}{|c|}{", "" ," } \\\\ \\hline
+    Dataset & Method (1) & Method (2) & Both methods & 
+    True heterozygotes & Proportion of TH
+    \\\\ \\hline")
 sufix<- "\\hline\n\\end{tabular}"
 
 
@@ -296,9 +298,12 @@ for(p in length(subNameList):1 ){
     name2<- gsub("_" , " ", subName)
     
     if(isCEU){
-        snpCount <- c(name2, table(dat$callby)[c(1,3,2)], sum( (dat$callby == 2 & (dat$snp == 1 & dat$snpdif == 0)) ) )  
+        countThree<- table(dat$callby)[c(1,3,2)]
+        countTH<- sum( (dat$callby == 2 & (dat$snp == 1 & dat$snpdif == 0)) ) 
+        percentTH<- formatC(countTH/countThree[3], digits=3, width=8, format="g")
+        snpCount <- c(name2, countThree, countTH, percentTH)  
     } else {
-        snpCount <- c(name2, table(dat$callby)[1], 0,0, sum( (dat$callby == 1 & (dat$snp == 1 & dat$snpdif == 0)) ) )  
+#         snpCount <- c(name2, table(dat$callby)[1], 0,0, sum( (dat$callby == 1 & (dat$snp == 1 & dat$snpdif == 0)) ) )  
     }
  
     snpLatex <- paste(snpCount, collapse=" & ")

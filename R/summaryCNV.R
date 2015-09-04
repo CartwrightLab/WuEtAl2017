@@ -73,7 +73,7 @@ cnvResultFileName<- paste0(latexDir, "CNV_", projectName, ".tex")
 
 prefix<- paste0("\\begin{tabular}{|c|c|c|c|}
     \\hline \\multicolumn{4}{|c|}{Copy number variation (CNV) summary}\\\\ \\hline
-    Dataset & Not CNV & CNV & CNV Percentage \\\\ \\hline")
+    Dataset & Not CNV & CNV & CNV proportion \\\\ \\hline")
 sufix<- "\\end{tabular}"
 
     
@@ -110,6 +110,8 @@ potHetName<- as.numeric(rownames(dataRefDirty))
 falsePosIndex <- which(! potHetName %in% trueHetName)
 falsePosPosition<- as.integer(potHetName[falsePosIndex])
 uniqueCnvRegion<- unique(cnvRegion)
+
+
 
 cnvTF<- vector(length=length(falsePosPosition))
 for(i in 1:length(falsePosPosition) ){

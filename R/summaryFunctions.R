@@ -1,10 +1,10 @@
 require(mc2d)
 
-extractMaxModel<- function(path, isCEU=True){
+extractMaxModel<- function(path, isCEU=TRUE){
         if(isCEU){
             listRData<- list.files(path=path, pattern="hets.+RData") 
         } else {
-           listRData<- list.files(path=path, pattern="homos_alt.+RData") 
+           listRData<- list.files(path=path, pattern="gt_mdm.+RData") 
         }
 	maxModel<- list()
 
@@ -45,34 +45,78 @@ calculateEachLikelihood<- function(maxModel, fullData, lowerLimit, upperLimit, n
 
         if(whichIsDirty[d]){
             data<- dataRefDirty
+            maxLikelihood[[d]]<- calculateEachLikelihoodOneModel(maxModel[[d]], dataRefDirty)
         }
         else{
             data<- dataRef
+            maxLikelihood[[d]]<- calculateEachLikelihoodOneModel(maxModel[[d]], dataRef)
         }
-        maxLikelihood[[d]]<- calculateEachLikelihoodOneModel(maxModel[[d]], data)
-        
-#         params<- maxModel[[d]]$param
-#         if(!is.matrix(params)){
-#             params<- matrix(params, nrow=1)
-#         }
-#         numParams <- nrow(params)
-#         numData<- nrow(data)
-        
-#         maxLikelihood[[d]]<- matrix(nrow=numData, ncol=numParams)
-#         for (i in 1:numData){
-#             x <- matrix(data[i,], nrow=1)
-#             sum_stat <- mdmSumStatsSingle(x)
-#             stat <- sum_stat$s
-# 
-#             for(p in 1:numParams){
-#                 maxLikelihood[[d]][i,p]<- mdmSingleLogLikeCore(stat, params[p,])
-#             }
-#         }
 
     }
     
     return(maxLikelihood)
 }
+
+
+calculateEachLikelihoodCHM1<- function(maxModel, fullData, lowerLimit, upperLimit, numData=NULL, isCEU=FALSE){
+
+    whichIsDirty <- grepl("_[0-9]D",names(maxModel))
+#     dataRef<- parseData(fullData, lowerLimit, upperLimit, dirtyData=FALSE, isCEU)
+    dataRefDirty<- parseData(fullData, lowerLimit, upperLimit, dirtyData=TRUE, isCEU=FALSE)
+
+    maxLikelihood <- vector(length=sum(whichIsDirty), mode="list")
+    names(maxLikelihood)<- names(maxModel)[whichIsDirty]
+    
+    if(NCOL(dataRefDirty)==3 && sum(dataRefDirty[,2])==0){
+        dataRefDirty<- dataRefDirty[,-2]
+    } else {
+        warning("CHECK dataRefDirty!!")
+    }
+    index <- 1
+    for( d in 1:length(maxModel)){
+
+        if(whichIsDirty[d]){
+            data<- dataRefDirty
+            maxLikelihood[[index]]<- calculateEachLikelihoodOneModelCHM1(maxModel[[d]], dataRefDirty)
+            index<- index + 1
+        }
+#         else{
+#             data<- dataRef
+#             maxLikelihood[[d]]<- calculateEachLikelihoodOneModel(maxModel[[d]], dataRef)
+#         }
+    }
+    return(maxLikelihood)
+}
+
+
+calculateEachLikelihoodOneModelCHM1<- function(model, data){
+    numData<- nrow(data)
+    
+    params<- model$param
+
+    if(sum(params[,3]) == 0){
+        params<- params[,-3]
+    } else {
+        warning("Check model$param dimension!!")
+    }
+    if(!is.matrix(params)){
+        params<- matrix(params, nrow=1)
+    }
+    numParams <- nrow(params)
+    
+    maxLikelihood<- matrix(nrow=numData, ncol=numParams)
+    for (i in 1:numData){
+        x <- matrix(data[i,], nrow=1)
+        sum_stat <- mdmSumStatsSingle(x)
+        stat <- sum_stat$s
+
+        for(p in 1:numParams){
+            maxLikelihood[i,p]<- mdmSingleLogLikeCore(stat, params[p,])
+        }
+    }
+    return(maxLikelihood)
+}
+
 
 calculateEachLikelihoodOneModel<- function(model, data){
     numData<- nrow(data)
@@ -117,12 +161,12 @@ parseData<- function(dat, lowerLimit, upperLimit, dirtyData, isCEU=TRUE){
 
 getMaxLikelihoodProp<- function(maxLikelihoodList){
 	result<- sapply(maxLikelihoodList, function(x){
-                prop <- table(apply(x,1,which.max))
+#                 prop <- table(apply(x,1,which.max))
+                prop <- tabulate( apply(x,1,which.max) , nbins=NCOL(x) )
                 return(prop/sum(prop))
-			})
+        })
 	return(result)
 }
-    
 
 parseDataFP<- function(dat, lowerLimit, upperLimit){
 	dataRef <- cbind(dat$refs,dat$alts,dat$e1s+dat$e2s)

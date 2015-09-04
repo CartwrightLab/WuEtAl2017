@@ -108,13 +108,14 @@ for( m in 3:length(maxLikelihoodTable)) {
 mtext(fullTitle, outer=T, cex=2, line=0)
 
 dev.off()
-
+embedFonts(rocPlotFile, options="-DPDFSETTINGS=/prepress")
 
 # }  ## end for loop 
 
 
-
+################################################################################
 ##### AUC table #####
+################################################################################
 # header<- names(latexTable)
 # header<- gsub("hets_" , "", header)
 # header<- gsub("_" , "M", header)
@@ -152,8 +153,9 @@ cat(sufix, file=fileAucTable, fill=T, append=T)
 
 
 
-
+################################################################################
 ##### make sure the methods are the same
+################################################################################
 require("ROCR")
 
 m2<- maxModel[[6]]
