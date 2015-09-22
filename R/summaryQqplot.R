@@ -119,7 +119,7 @@ for( m in 1:length(maxModel)) {
 
 
 dev.off()
-
+embedFonts(qqplotFile, options="-DPDFSETTINGS=/prepress")
 # } # match (p in 1:length(subNameList) ){
 
 ########################################
