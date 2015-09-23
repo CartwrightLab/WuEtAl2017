@@ -194,9 +194,14 @@ parseDataIndex<- function(dat, index, lowerLimit, upperLimit){
 	
 
 plotqq<- function(z, ff, outerText){
-    mains = c("Reference Allele", "Alternate Allele", "Error")
+    numCat<- NCOL(z)
+    if(numCat==3){
+        mains = c("Reference Allele", "Alternate Allele", "Error")
+    } else {
+        mains = c("Reference Allele", "Error")
+    }
 
-    for(i in 1:3) {
+    for(i in 1:numCat) {
         qqplot(z[,i],ff[,i],xlim=c(0,1),ylim=c(0,1),xlab="Estimated Frequency",ylab="Observed Frequency",main=mains[i])
         abline(0,1)
     #   print(ad.stat.k(ff[,i],z[,i]))

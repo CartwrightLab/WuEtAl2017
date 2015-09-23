@@ -24,7 +24,7 @@ source("/home/steven/Postdoc2/Project_MDM/MiDiMu/R/summaryFunctions.R")
 # source("/home/steven/Postdoc2/Project_MDM/MiDiMu/R/mdm.R")
 
 isCEU <- FALSE
-isCEU <- TRUE
+# isCEU <- TRUE
 
 dirtyData <- FALSE
 upperLimit <- 150
@@ -36,23 +36,23 @@ latexDir<- "/home/steven/Postdoc2/Project_MDM/DiriMulti/"
 
 cnvDir <- "/home/steven/Postdoc2/Project_MDM/CNV/"
 
-if(isCEU){
-    pwd <- "/home/steven/Postdoc2/Project_MDM/CEU/"
-    subNameList<- c(
-    "CEU10_C10", "CEU10_C21",
-    "CEU11_C10", "CEU11_C21",
-    "CEU12_C10", "CEU12_C21",
-    "CEU13_C10", "CEU13_C21"
-    )
-
-    fullTitleList<- c(
-    "CEU 2010 Chromosome 10", "CEU 2010 Chromosome 21",
-    "CEU 2011 Chromosome 10", "CEU 2011 Chromosome 21",
-    "CEU 2012 Chromosome 10", "CEU 2012 Chromosome 21",
-    "CEU 2013 Chromosome 10", "CEU 2013 Chromosome 21"
-    )
-    projectName<- "CEU"
-} else {
+# if(isCEU){
+#     pwd <- "/home/steven/Postdoc2/Project_MDM/CEU/"
+#     subNameList<- c(
+#     "CEU10_C10", "CEU10_C21",
+#     "CEU11_C10", "CEU11_C21",
+#     "CEU12_C10", "CEU12_C21",
+#     "CEU13_C10", "CEU13_C21"
+#     )
+# 
+#     fullTitleList<- c(
+#     "CEU 2010 Chromosome 10", "CEU 2010 Chromosome 21",
+#     "CEU 2011 Chromosome 10", "CEU 2011 Chromosome 21",
+#     "CEU 2012 Chromosome 10", "CEU 2012 Chromosome 21",
+#     "CEU 2013 Chromosome 10", "CEU 2013 Chromosome 21"
+#     )
+#     projectName<- "CEU"
+# } else {
     pwd <- "/home/steven/Postdoc2/Project_MDM/CHM1/"
     subNameList<- c(
     "CHM1_C10", "CHM1_C21"
@@ -62,7 +62,7 @@ if(isCEU){
     "CHM1 Chromosome 10", "CHM1 Chromosome 21"
     )
     projectName<- "CHM1"
-}
+# }
 setwd(pwd)
 
 
@@ -92,33 +92,51 @@ cnvFile<- read.table(paste0(cnvDir, "CNV_C", chromosomeIndex, "_list"))
 cnvRegion<- cnvFile[cnvFile[,1]=="copy_number_variation" | 
                     cnvFile[,1]=="copy_number_gain" | 
                     cnvFile[,1]=="copy_number_loss", 2:3]
+uniqueCnvRegion<- unique(cnvRegion)
 
 setwd(fullPath)
-maxModel<- extractMaxModel(fullPath)
+maxModel<- extractMaxModel(fullPath, isCEU=isCEU)
 
-
-if(isCEU){
-    hets_byref<- list.files(path=fullPath, pattern="hets.+byref") 
-    dataFull <- read.delim(paste(fullPath, hets_byref, sep=""), header=TRUE)
-    dataRef<- parseData(dataFull, lowerLimit, upperLimit, dirtyData)
-    dataRefDirty<- parseData(dataFull, lowerLimit, upperLimit, dirtyData=TRUE)
-} else{
+# 
+# if(isCEU){
+#     hets_byref<- list.files(path=fullPath, pattern="hets.+byref") 
+#     dataFull <- read.delim(paste(fullPath, hets_byref, sep=""), header=TRUE)
+#     dataRef<- parseData(dataFull, lowerLimit, upperLimit, dirtyData)
+#     dataRefDirty<- parseData(dataFull, lowerLimit, upperLimit, dirtyData=TRUE)
+# } else{
     hets_byref<- file.path("base_count_meta_subsample") 
     dataFull <- read.delim(paste(fullPath, hets_byref, sep=""), header=TRUE)
     # dataRef<- parseData(dataFull, lowerLimit, upperLimit, dirtyData, isCEU=isCEU)
     dataRefDirty<- parseData(dataFull, lowerLimit, upperLimit, dirtyData=TRUE, isCEU=isCEU)
+# }
+
+# maxLikelihoodList<- maxLikelihoodTable
+# result<- sapply(maxLikelihoodList, function(x){
+# #                 prop <- table(apply(x,1,which.max))
+#                 prop <- tabulate( apply(x,1,which.max) , nbins=NCOL(x) )
+#                 return(prop/sum(prop))
+#         })
+# 
+
+fileMaxLikelihoodTabel <- file.path(fullPath, "maxLikelihoodTableFull.RData")
+if ( file.exists(fileMaxLikelihoodTabel) && loadData ){
+    load(fileMaxLikelihoodTabel)
+} else{
+    maxLikelihoodTable<- calculateEachLikelihoodCHM1(maxModel, dataFull, lowerLimit=lowerLimit, upperLimit=upperLimit, isCEU=isCEU)#, numData=100)
+    attr(maxLikelihoodTable, "title")<- subName
+    save(maxLikelihoodTable, file=file.path(fullPath, "maxLikelihoodTableFull.RData"))
 }
 
-# cnvFile[,1]
+mlMaxIndex<- sapply(maxLikelihoodTable, function(x){
+                prop <-  apply(x,1,which.max) 
+            })
 
+maxComp<- which.max(table(mlMaxIndex[,2]))
+index<- (mlMaxIndex[,2]==maxComp)
 
-
-trueHetName<- as.numeric(rownames(dataRef))
 potHetName<- as.numeric(rownames(dataRefDirty))
-falsePosIndex <- which(! potHetName %in% trueHetName)
-falsePosPosition<- as.integer(potHetName[falsePosIndex])
-uniqueCnvRegion<- unique(cnvRegion)
-
+trueHetName<- potHetName[index]
+falsePosPosition<- potHetName[!index]
 
 
 cnvTF<- vector(length=length(falsePosPosition))
@@ -132,7 +150,7 @@ for(i in 1:length(falsePosPosition) ){
 summary(cnvTF)
 count_T<- sum(cnvTF)
 count_F<- length(cnvTF)-count_T
-cat(paste0(fullTitle, " False positive sites"), " & ",
+cat(paste0(fullTitle, " M2 Minor component"), " & ",
     paste(count_F,  count_T, formatC(count_T/length(cnvTF)), sep=" & "),
     " \\\\ " , file=cnvResultFileName, append=TRUE, fill=TRUE)
 
@@ -149,10 +167,10 @@ summary(allTF)
 count_T<- sum(allTF)
 count_F<- length(allTF)-count_T
 
-cat(paste0(fullTitle, " All heterozygous"), " & ",
+cat(paste0(fullTitle, " M2 Major component"), " & ",
     paste(count_F,  count_T, formatC(count_T/length(cnvTF)), sep=" & "),
     " \\\\ \\hline" , file=cnvResultFileName, append=TRUE, fill=TRUE)
-# unique( cbind( rep(1:2, 60), rep(1:5, 24)) )
+
 
 }
 cat(sufix, file=cnvResultFileName, fill=T, append=T)

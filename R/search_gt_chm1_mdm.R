@@ -96,9 +96,11 @@ if(sub_name == args[3]){
 x <- cbind(dat$refs,dat$alts,dat$e1s+dat$e2s)
 x <- data.matrix(x)
 row.names(x) <- dat$pos
-x <- x[dat$callby == 1 & ((dat$snp == 1 & dat$snpdif == 0) | dirty_data), ]
+# x <- x[dat$callby == 1 & ((dat$snp == 1 & dat$snpdif == 0) | dirty_data), ]
 n <- rowSums(x)
-oo <- lowerLimit <= n & n <= upperLimit
+propRef <- x[,1]/n
+oo <- lowerLimit <= n & n <= upperLimit & propRef > 0.8
+# oo <- lowerLimit <= n & n <= upperLimit 
 x <- x[oo,]
 n <- n[oo]
 
@@ -106,9 +108,11 @@ message(sprintf("Searching for maximum likelihood of %d-component model....",k))
 message(sprintf("Using%s data with %dx to %dx coverage....",
 	(if(dirty_data) " dirty" else ""), lowerLimit, upperLimit))
 
-ofile <- sprintf(  
-	"gt_mdm_%s_%d%s_results_%d.RData",sub_name, k, if(dirty_data) "D" else "", pid)
-
+ofile <- sprintf("gt_mdm_%s_%d%s_results_%d.RData",
+                sub_name, k, if(dirty_data) "D" else "", pid)
+ofile <- sprintf("gt_mdm_%s_%d%s_results_%d.RData",
+                sub_name, k, "P", pid)
+                
 res <- fitmdm.mle.many(x,nn,k)
 ll <- sapply(res,function(x) x$ll)
 
