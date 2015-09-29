@@ -39,9 +39,9 @@ latexDir<- "/home/steven/Postdoc2/Project_MDM/DiriMulti/"
 setwd(pwd)
 
 
-p<- 8
+p<- 2
 p<- 1
-# for (p in 2:4){
+
 # for(p in 1:length(subNameList) ){
 
 subName<- subNameList[p]
@@ -59,56 +59,64 @@ hets_byref<- file.path("base_count_meta_subsample")
 dataFull <- read.delim(paste(fullPath, hets_byref, sep=""), header=TRUE)
 # dataRef<- parseData(dataFull, lowerLimit, upperLimit, dirtyData, isCEU=isCEU)
 dataRefDirty<- parseData(dataFull, lowerLimit, upperLimit, dirtyData=TRUE, isCEU=isCEU)
-    
-    
-rowSumDataRef<- rowSums(dataRefDirty[,-2])
-colSumDataRef<- colSums(dataRefDirty[,-2])
+n <- rowSums(dataRefDirty)
+propRef <- dataRefDirty[,1]/n
+oo <- propRef > 0.8
+# oo <- lowerLimit <= n & n <= upperLimit 
+dataRefProp <- dataRefDirty[oo,]
+
+plotData<- dataRefDirty[,-2]
+plotData<- dataRefProp[,-2]
+rowSumDataRef<- rowSums(plotData)
+colSumDataRef<- colSums(plotData)
 # rowSumDataRefDirty<- rowSums(dataRefDirty)
 
-freqDataRef<- dataRefDirty[,-2]/rowSumDataRef
+freqDataRef<- plotData/rowSumDataRef
 # freqDataRefDirty<- dataRefDirty/rowSumDataRefDirty
 
 
 maxModel<- extractMaxModel(fullPath, isCEU=isCEU)
 whichIsDirty <- grepl("_[0-9]D",names(maxModel))
-header<- gsub("hets_" , "", names(maxModel) )
+whichIsP <- grepl("_[0-9]P",names(maxModel))
+header<- gsub("_" , "", names(maxModel) )
+header<- gsub("D" , "F", header )
+header<- gsub("P" , "R", header )
 
-qqplotFile<- file.path(latexDir, paste0("qqPlots_", subName, ".pdf") )
+plotTitle <- paste0("qqPlots_", subName, ".pdf") 
+qqplotFile<- file.path(latexDir, plotTitle)
 
 
-pdf(file=qqplotFile, width=12, height=6)
-par(mai=c(0.6,0.7,0.2,0.1), mfrow=c(1,2), 
-    cex.main=1.2^4,cex.lab=1.2^2, 
+pdf(file=qqplotFile, width=12, height=6, title=plotTitle)
+par(mai=c(0.8,0.8,0.2,0.1), mfrow=c(1,2), 
+    cex.main=1.2^2,cex.lab=1.2, 
     omi=c(0,0,0.5,0) )
 
 # mains = c("Reference Allele", "Alternate Allele", "Error")
 
-#simple multinomial (no bias)
-p1<- (colSumDataRef[1]+colSumDataRef[2])/2
-prob <- c(p1, p1, colSumDataRef[3]) /sum(colSumDataRef)
+# #simple multinomial (no bias)
 prob <- colSumDataRef /sum(colSumDataRef)
 ll <- sum(log(prob)*colSumDataRef)
 # cat(sprintf("  ll = %0.16g\n", ll));#print(prob)
 
 b <- rmultinomial(length(rowSumDataRef), rowSumDataRef, prob)
 z <- b/rowSums(b)
-plotqq(z, freqDataRef, "\n**** Multinomial ****\n")
+plotqq(z, freqDataRef, "\n**** Multinomial ****\n") #, xlim=c(0.8,1), ylim=c(0.8,1))
 
 
 #multinomial (with ref bias)
-prob <- colSumDataRef / sum(colSumDataRef)
-ll <- sum(log(prob)* colSumDataRef)
-# cat(sprintf("  ll = %0.16g\n", ll));#print(prob)
-
-b <- rmultinomial(length(rowSumDataRef), rowSumDataRef, prob)
-z <- b/rowSums(b)
-plotqq(z, freqDataRef, "\n**** Biased Multinomial ****\n")
+# prob <- colSumDataRef / sum(colSumDataRef)
+# ll <- sum(log(prob)* colSumDataRef)
+# # cat(sprintf("  ll = %0.16g\n", ll));#print(prob)
+# 
+# b <- rmultinomial(length(rowSumDataRef), rowSumDataRef, prob)
+# z <- b/rowSums(b)
+# plotqq(z, freqDataRef, "\n**** Biased Multinomial ****\n")
 
 for( m in 1:length(maxModel)) {
 
     #dirichlet-multinomial mixture
     mModel<- maxModel[[m]]
-    if( whichIsDirty[m]){
+    if( whichIsP[m]){
         b <- rmdm(length(rowSumDataRef), rowSumDataRef, mModel$f,
                     phi=mModel$params[,1], p=mModel$params[,c(2,4)])
         z <- b/rowSums(b)
@@ -121,12 +129,14 @@ for( m in 1:length(maxModel)) {
     }
 
     plotqq(z, ff, paste0("\n**** Dirichlet-Multinomial ", header[m] ," ****\n") )
+#     plotqq(z, ff, paste0("\n**** Dirichlet-Multinomial ", header[m] ," ****\n"), xlim=c(0.8,1), ylim=c(0.8,1) )
 
 }
 
 
 dev.off()
 embedFonts(qqplotFile, options="-DPDFSETTINGS=/prepress")
+
 # } # match (p in 1:length(subNameList) ){
 
 ########################################

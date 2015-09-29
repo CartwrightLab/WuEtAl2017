@@ -72,7 +72,7 @@ if ( file.exists(fileMaxLikelihoodTabel) ){
     stop(paste0("File does not exist: ", fileMaxLikelihoodTabel))
 }
 
-# refIndex<- (dataFull$pos %in% as.numeric( rownames(dataRef)) )
+ refIndex<- (dataFull$pos %in% as.numeric( rownames(dataRef)) )
 # snpTfClean <- (dataFull$snp == 1 & dataFull$snpdif == 0)[refIndex]
 refDirtyIndex<- (dataFull$pos %in% as.numeric( rownames(dataRefDirty)) )
 snpTf <- (dataFull$snp == 1 & dataFull$snpdif == 0)[refDirtyIndex]
@@ -82,29 +82,44 @@ header<- gsub("hets_" , "", names(maxLikelihoodTable) )
 
 rocPlotFile<- file.path(latexDir, paste0("rocPlots_", subName, ".pdf") )
 pdf(file=rocPlotFile, width=12, height=8)
-par(mar=c(3,3,2,1), mgp=c(1.75, 0.6, 0), mfrow=c(2,3), 
+par(mar=c(3,3,2,1), mgp=c(1.75, 0.6, 0), #mfrow=c(2,3), 
     cex.main=1.2^3, cex.lab=1.2^2, oma=c(0,0,2.5,0) )
 
-for( m in 3:length(maxLikelihoodTable)) {
+# for( m in 3:length(maxLikelihoodTable)) {
+colIndex <- 1
+whichDirtyIndex<-which(whichIsDirty)[-1]
+legendAUC<- vector()
+for(m in whichDirtyIndex){
+
+    maxIndex<- which.max(maxModel[[m]]$f)
     
-    if( whichIsDirty[m]){
-        maxIndex<- which.max(maxModel[[m]]$f)
-        
-        ml<- maxLikelihoodTable[[m]]
-        classProp<- likelihoodToProportion(ml, maxModel[[m]]$f)
-        pred<- prediction(classProp[,maxIndex], snpTf)
+    ml<- maxLikelihoodTable[[m]]
+    classProp<- likelihoodToProportion(ml, maxModel[[m]]$f)
+    pred<- prediction(classProp[,maxIndex], snpTf)
+    
+#     cleanIndex<- refIndex[refDirtyIndex]
+#     predClean<- prediction(classProp[cleanIndex,maxIndex], snpTfClean)
+#     table(apply(classProp[,],1,which.max))
+#     table(apply(classProp[cleanIndex,],1,which.max))
 
 #         ll<-mdm.ll(dataRefDirty, maxModel[[m]]$f, mdmAlphas(maxModel[[m]]$params))
 #         pred<- prediction(ll$p.row[,maxIndex], snpTf)
 
-        perfRoc <- performance(pred, "tpr", "fpr")
-        perfAuc <- performance(pred,"auc")
-        allAUC[p, m/2] <- perfAuc@y.values[[1]]
-        auc<- formatC(allAUC[p, m/2])
-        plot(perfRoc, main=paste("ROC curve", header[m], "AUC:",auc), xlab="1 - specificity", ylab="Sensitivity")
-        
-    }
+    perfRoc <- performance(pred, "tpr", "fpr")
+    perfAuc <- performance(pred,"auc")
+    allAUC[p, m/2] <- perfAuc@y.values[[1]]
+    auc<- formatC(allAUC[p, m/2])
+    legendAUC[m]<- auc
+    plot(perfRoc, main="", xlab="1 - specificity", ylab="Sensitivity", col=colIndex, lty=colIndex, lwd=3)
+    colIndex <- colIndex+1
+    par(new=T)
 }
+
+
+
+legend(0.8,0.5, legend=paste(header[whichDirtyIndex], legendAUC[whichDirtyIndex]), col=1:5, lwd=3, lty=1:5)
+paste("ROC curve", header[m], "AUC:",auc)
+
 mtext(fullTitle, outer=T, cex=2, line=0)
 
 dev.off()

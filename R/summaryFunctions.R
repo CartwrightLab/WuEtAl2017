@@ -1,32 +1,38 @@
 require(mc2d)
 
 extractMaxModel<- function(path, isCEU=TRUE){
-        if(isCEU){
-            listRData<- list.files(path=path, pattern="hets.+RData") 
-        } else {
-           listRData<- list.files(path=path, pattern="gt_mdm.+RData") 
+    if(isCEU){
+        listRData<- list.files(path=path, pattern="hets.+RData") 
+    } else {
+        listRData<- list.files(path=path, pattern="gt_mdm.+RData") 
+    }
+    maxModel<- list()
+
+    for(i in 1:length(listRData)){
+
+        load(paste(path, listRData[i], sep=""))
+        data<- get(resName)
+        if(length(data) != 0){
+            index <- which.max(sapply(data, function(x) {x$ll} ))
+            maxModel[[i]]<- data[[index]]
+            if (is.null(maxModel[[i]][["f"]]) ){ # Fix 1 parameter model
+                    maxModel[[i]][["f"]] <- 1
+                    maxModel[[i]]$params <- t(as.matrix(maxModel[[i]]$params))
+            }
         }
-	maxModel<- list()
-
-	for(i in 1:length(listRData)){
-
-		load(paste(path, listRData[i], sep=""))
-		data<- get(resName)
-		if(length(data) != 0){
-			index <- which.max(sapply(data, function(x) {x$ll} ))
-			maxModel[[i]]<- data[[index]]
-			if (is.null(maxModel[[i]][["f"]]) ){ # Fix 1 parameter model
-				maxModel[[i]][["f"]] <- 1
-				maxModel[[i]]$params <- t(as.matrix(maxModel[[i]]$params))
-			}
-		}
-		else{
-			maxModel[[i]]<- "NULL"
-		}
+        else{
+            maxModel[[i]]<- "NULL"
+        }
+        
+        if(isCEU){
+            subName <- gsub("gt_mdm_(hets_.*)_result.*\\.RData","\\1" ,listRData[i])
+            names(maxModel)[[i]]<- subName
+        } else {
+            subName <- gsub("gt_mdm_(_.*)_result.*\\.RData","\\1" ,listRData[i])
+            names(maxModel)[[i]]<- subName
+        }
 		
-		subName <- gsub("gt_mdm_(hets_.*)_result.*\\.RData","\\1" ,listRData[i])
-		names(maxModel)[[i]]<- subName
-	}
+    }
 	return(maxModel)
 }
 
@@ -61,29 +67,35 @@ calculateEachLikelihood<- function(maxModel, fullData, lowerLimit, upperLimit, n
 calculateEachLikelihoodCHM1<- function(maxModel, fullData, lowerLimit, upperLimit, numData=NULL, isCEU=FALSE){
 
     whichIsDirty <- grepl("_[0-9]D",names(maxModel))
+    whichIsProp <- grepl("_[0-9]P",names(maxModel))
 #     dataRef<- parseData(fullData, lowerLimit, upperLimit, dirtyData=FALSE, isCEU)
     dataRefDirty<- parseData(fullData, lowerLimit, upperLimit, dirtyData=TRUE, isCEU=FALSE)
-
-    maxLikelihood <- vector(length=sum(whichIsDirty), mode="list")
-    names(maxLikelihood)<- names(maxModel)[whichIsDirty]
-    
     if(NCOL(dataRefDirty)==3 && sum(dataRefDirty[,2])==0){
         dataRefDirty<- dataRefDirty[,-2]
     } else {
         warning("CHECK dataRefDirty!!")
     }
+    n <- rowSums(dataRefDirty)
+    propRef <- dataRefDirty[,1]/n
+    oo <- propRef > 0.8
+    dataRefProp <- dataRefDirty[oo,]
+
+    maxLikelihood <- vector(length=sum(whichIsDirty)+sum(whichIsProp), mode="list")
+    names(maxLikelihood)<- names(maxModel)[whichIsDirty | whichIsProp]
+    
+    
     index <- 1
     for( d in 1:length(maxModel)){
 
         if(whichIsDirty[d]){
-            data<- dataRefDirty
             maxLikelihood[[index]]<- calculateEachLikelihoodOneModelCHM1(maxModel[[d]], dataRefDirty)
             index<- index + 1
         }
-#         else{
-#             data<- dataRef
-#             maxLikelihood[[d]]<- calculateEachLikelihoodOneModel(maxModel[[d]], dataRef)
-#         }
+        else if (whichIsProp[d]){
+            maxLikelihood[[index]]<- calculateEachLikelihoodOneModelCHM1(maxModel[[d]], dataRefProp)
+            index<- index + 1
+        }
+        
     }
     return(maxLikelihood)
 }
@@ -193,7 +205,7 @@ parseDataIndex<- function(dat, index, lowerLimit, upperLimit){
 }
 	
 
-plotqq<- function(z, ff, outerText){
+plotqq<- function(z, ff, outerText, xlim=c(0,1),ylim=c(0,1)){
     numCat<- NCOL(z)
     if(numCat==3){
         mains = c("Reference Allele", "Alternate Allele", "Error")
@@ -202,7 +214,7 @@ plotqq<- function(z, ff, outerText){
     }
 
     for(i in 1:numCat) {
-        qqplot(z[,i],ff[,i],xlim=c(0,1),ylim=c(0,1),xlab="Estimated Frequency",ylab="Observed Frequency",main=mains[i])
+        qqplot(z[,i],ff[,i],,xlab="Estimated Frequency",ylab="Observed Frequency",main=mains[i], xlim=xlim, ylim=ylim)
         abline(0,1)
     #   print(ad.stat.k(ff[,i],z[,i]))
     }

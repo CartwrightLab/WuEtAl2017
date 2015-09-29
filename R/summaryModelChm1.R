@@ -69,6 +69,11 @@ if(!isCEU){
 dataFull <- read.delim(paste(fullPath, hets_byref, sep=""), header=TRUE)
 # dataRef<- parseData(dataFull, lowerLimit, upperLimit, dirtyData, isCEU=isCEU)
 dataRefDirty<- parseData(dataFull, lowerLimit, upperLimit, dirtyData=TRUE, isCEU=isCEU)
+n <- rowSums(dataRefDirty)
+propRef <- dataRefDirty[,1]/n
+oo <- propRef > 0.8
+dataRefProp <- dataRefDirty[oo,]
+
 
 fileMaxLikelihoodTabel <- file.path(fullPath, "maxLikelihoodTableFull.RData")
 if ( file.exists(fileMaxLikelihoodTabel) && loadData ){
@@ -90,12 +95,12 @@ modelParametersSummary<- sapply(maxModel, function(x){
     
     return(x)
 })
-modelParametersSummary<- modelParametersSummary[grepl("_[0-9]D",names(modelParametersSummary))]
+modelParametersSummary<- modelParametersSummary[grepl("_[0-9]D|P",names(modelParametersSummary))]
 
 
 
 propEM<- sapply(maxModel, function(x){ x$f })
-propEM<- propEM[grepl("_[0-9]D",names(propEM))]
+propEM<- propEM[grepl("_[0-9]D|P",names(propEM))]
 propML<- getMaxLikelihoodProp(maxLikelihoodTable)
 
 modelParametersSummary2 <- modelParametersSummary
@@ -119,14 +124,23 @@ for(i in 1:length(propML)){
 #         modelParametersSummary2[[i]][newOrder,]
     
 }
-    
-    
-    
-    
+
+
+modelParametersSummary3<- vector(length=length(modelParametersSummary2)+1, mode="list")
+modelParametersSummary3[2:13] <- modelParametersSummary2
+names(modelParametersSummary3)<- c("Multinomial", names(modelParametersSummary2))
+
+colSumDataRef<- colSums(dataRefProp)[-2]
+#simple multinomial (no bias)
+prob_MN <- colSumDataRef /sum(colSumDataRef)
+modelParametersSummary3[[1]] <- matrix(c(prob_MN,rep(NA,5)), nrow=1, byrow=T)
+# names(modelParametersSummary3[[1]])<- colnames(modelParametersSummary3[[3]])
+
+
 ## latex parameter table    
 # formatC(x, digits=3, width=8, format="g")
 # sprintf("%8.3g" , x)
-latexTable<- sapply(modelParametersSummary2, function(x){
+latexTable<- sapply(modelParametersSummary3, function(x){
     newOrder<-rev(order(x[,6]))
     x<- x[newOrder,]
     
@@ -141,9 +155,15 @@ latexTable<- sapply(modelParametersSummary2, function(x){
 
 
 header<- names(latexTable)
-header<- paste(subName, 1:length(latexTable), sep=" M" )
-header<- gsub("_" , " ", header)
-
+# header<- gsub("hets_" , "", header)
+# header<- gsub("_" , "M", header)
+# 
+# header<- paste(subName, 1:length(latexTable), sep=" M" )
+header<- paste("CHM1", header)
+header<- gsub("_" , "M", header)
+header<- gsub("D" , "F", header)
+header<- gsub("P" , "R", header) 
+ 
 prefix<- paste0("\\begin{tabular}{|c|cc|cc|c|c|c|}
     \\hline \\multicolumn{8}{|c|}{Parameter estimates ",fullTitle,"}\\\\ \\hline
     Model & $\\pi_{ref}$ & $\\pi_{err}$ & $\\alpha_{ref}$ & $\\alpha_{err}$ & $\\varphi$ &  $p$ & ML-P \\\\ \\hline")
@@ -163,7 +183,7 @@ cat(sufix, file=fileLatexTable, fill=T, append=T)
 
 ## maxlikelihood table
 modelLikelihood<- sapply(maxModel, function(x){x$ll})
-modelLikelihood<- modelLikelihood[grepl("_[0-9]D",names(modelLikelihood))]
+modelLikelihood<- modelLikelihood[grepl("_[0-9]D|P",names(modelLikelihood))]
 
 # \begin{tabular}{|c|c|c|}
 #         \hline \multicolumn{3}{|c|}{-lnL}\\ \hline
@@ -179,23 +199,34 @@ modelLikelihood<- modelLikelihood[grepl("_[0-9]D",names(modelLikelihood))]
 
 fileMaxLikelihoodLatexTabel <- file.path(latexDir, paste0(subName, "_maxLikelihoodLatexTable.tex") )
 
-prefix<- paste0("\\begin{tabular}{|c|c|c|c|}
-    \\hline \\multicolumn{4}{|c|}{",fullTitle," } \\\\ \\hline
-    Model & lnL & AIC & BIC \\\\ \\hline")
+prefix<- paste0("\\begin{tabular}{|c|c|c|c|c|c|c|}
+    \\hline \\multicolumn{7}{|c|}{",fullTitle," } \\\\ \\hline
+     Model & lnL & lnL P & AIC & BIC & AIC P& BIC P\\\\ \\hline")
 sufix<- "\\hline\n\\end{tabular}"
-
-maxLiTable<- matrix(ncol=3, nrow=length(modelLikelihood) )
+#      Model & lnL & AIC & BIC \\\\ \\hline")
+# maxLiTable<- matrix(ncol=3, nrow=length(modelLikelihood) )
+# numFreeP<- seq(3,by=4,length=6)
+# coefBIC<- log(NROW(dataRefDirty)) 
+# for(i in 1:NROW(maxLiTable) ){
+#     t1<- modelLikelihood[i]
+#     t2<- -2*t1 + 2*numFreeP[i]
+#     t3<- -2*t1 + coefBIC*numFreeP[i]
+#     maxLiTable[i,]<- c(t1, t2, t3)
+# }
+maxLiTable<- matrix(ncol=6, nrow=length(modelLikelihood)/2 )
 numFreeP<- seq(3,by=4,length=6)
-coefBIC<- log(NROW(dataRefDirty)) 
+coefBIC<- c(log(NROW(dataRefDirty)), log(NROW(dataRefProp)) )
 for(i in 1:NROW(maxLiTable) ){
-    t1<- modelLikelihood[i]
+    t1<- c(modelLikelihood[i*2-1], modelLikelihood[i*2])
     t2<- -2*t1 + 2*numFreeP[i]
     t3<- -2*t1 + coefBIC*numFreeP[i]
     maxLiTable[i,]<- c(t1, t2, t3)
 }
+
+
 minIndex<- apply(maxLiTable,2,which.min)
 maxLiTable<- formatC(maxLiTable,  digits=2, width=12, format="f")
-for(i in 2:NCOL(maxLiTable)){
+for(i in 3:NCOL(maxLiTable)){
     maxLiTable[minIndex[i], i]<-paste0(maxLiTable[minIndex[i], i], "*")
 }
 

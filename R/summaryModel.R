@@ -96,6 +96,7 @@ if ( file.exists(fileMaxLikelihoodTabel) && loadData ){
     save(maxLikelihoodTable, file=file.path(fullPath, "maxLikelihoodTableFull.RData"))
 }
 
+
 modelLikelihood<- sapply(maxModel, function(x){x$ll})
 # modelParams<- sapply(maxModel, function(x){x$params})
 
@@ -107,7 +108,6 @@ modelParametersSummary<- sapply(maxModel, function(x){
     
     return(x)
 })
-
 
 
 
@@ -135,14 +135,29 @@ for(i in 1:length(propML)){
 #         modelParametersSummary2[[i]][newOrder,]
     
 }
-    
-    
+
+
+modelParametersSummary3<- vector(length=length(modelParametersSummary2)+2, mode="list")
+modelParametersSummary3[3:14] <- modelParametersSummary2
+names(modelParametersSummary3)<- c("Multinomial", "Mulitnomial w/bias", names(modelParametersSummary2))
+
+colSumDataRef<- colSums(dataRef)
+
+#simple multinomial (no bias)
+p1<- (colSumDataRef[1]+colSumDataRef[2])/2
+prob_MN <- c(p1, p1, colSumDataRef[3]) / sum(colSumDataRef)
+modelParametersSummary3[[1]]<- matrix(c(prob_MN,rep(NA,6)), nrow=1, byrow=T)
+# names(modelParametersSummary3[[1]])<- colnames(modelParametersSummary3[[3]])
+
+#multinomial (with ref bias)
+prob_MNB <- colSumDataRef / sum(colSumDataRef)
+modelParametersSummary3[[2]]<- matrix(c(prob_MNB,rep(NA,6)), nrow=1, byrow=T)
     
     
 ## latex parameter table    
 # formatC(x, digits=3, width=8, format="g")
 # sprintf("%8.3g" , x)
-latexTable<- sapply(modelParametersSummary2, function(x){
+latexTable<- sapply(modelParametersSummary3, function(x){
     newOrder<-rev(order(x[,8]))
     x<- x[newOrder,]
     
