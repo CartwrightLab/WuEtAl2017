@@ -71,10 +71,13 @@ p<- 1
 
 cnvResultFileName<- paste0(latexDir, "CNV_", projectName, ".tex")
 
-prefix<- paste0("\\begin{tabular}{|c|c|c|c|}
+prefix<- paste0("\\begin{tabular}{|c|ccc|}
     \\hline \\multicolumn{4}{|c|}{Copy number variation (CNV) summary}\\\\ \\hline
     Dataset & Not CNV & CNV & CNV proportion \\\\ \\hline")
 sufix<- "\\end{tabular}"
+
+
+cnvFile<- read.table(paste0(cnvDir, "DGV_GRCh37_hg19_variants_subset.txt"), header=T)
 
     
 cat(prefix, file=cnvResultFileName, fill=TRUE)
@@ -85,14 +88,22 @@ fullTitle<- fullTitleList[p]
 subFolders <- paste0(subName, "/original/base_count/")
 fullPath <- file.path(pwd, subFolders)
 chromosomeIndex<- gsub(".*_C([0-9]+)", "\\1", subName)
-cnvFile<- read.table(paste0(cnvDir, "CNV_C", chromosomeIndex, "_list"))
+# cnvFile<- read.table(paste0(cnvDir, "CNV_C", chromosomeIndex, "_list"))
 
+cnvChromosome<- cnvFile[cnvFile[,2]==chromosomeIndex & cnvFile[,5]=="CNV",]
 # cnvRegion<- cnvFile[, 2:3]
 # table(cnvFile[,1])
-cnvRegion<- cnvFile[cnvFile[,1]=="copy_number_variation" | 
-                    cnvFile[,1]=="copy_number_gain" | 
-                    cnvFile[,1]=="copy_number_loss", 2:3]
+# cnvRegion<- cnvFile[cnvFile[,1]=="copy_number_variation" 
+#                     cnvFile[,1]=="copy_number_gain" | 
+#                    cnvFile[,1]=="copy_number_loss"
+#                     , 2:3]
+
+cnvRegion<- cnvChromosome[,3:4]
 uniqueCnvRegion<- unique(cnvRegion)
+# 
+# aa=apply(uniqueCnvRegion,1,diff)
+# quantile(aa,seq(0.8,0.99, by=0.01) )
+# uniqueCnvRegion2<- uniqueCnvRegion[aa< 150000,]
 
 setwd(fullPath)
 maxModel<- extractMaxModel(fullPath, isCEU=isCEU)
@@ -131,8 +142,8 @@ mlMaxIndex<- sapply(maxLikelihoodTable, function(x){
                 prop <-  apply(x,1,which.max) 
             })
 
-maxComp<- which.max(table(mlMaxIndex[,2]))
-index<- (mlMaxIndex[,2]==maxComp)
+maxComp<- which.max(table(mlMaxIndex[[4]]))
+index<- (mlMaxIndex[[4]]==maxComp)
 
 potHetName<- as.numeric(rownames(dataRefDirty))
 trueHetName<- potHetName[index]
@@ -150,25 +161,45 @@ for(i in 1:length(falsePosPosition) ){
 summary(cnvTF)
 count_T<- sum(cnvTF)
 count_F<- length(cnvTF)-count_T
+
 cat(paste0(fullTitle, " M2 Minor component"), " & ",
     paste(count_F,  count_T, formatC(count_T/length(cnvTF)), sep=" & "),
     " \\\\ " , file=cnvResultFileName, append=TRUE, fill=TRUE)
 
 
 trueHetName<- as.numeric(trueHetName)
-allTF<- vector(length=length(trueHetName))
-for(i in 1:length(trueHetName) ){
-    index<- trueHetName[i]
-    if( any(which(index >= uniqueCnvRegion[,1] & index <= uniqueCnvRegion[,2]  ))  ){
-        cnvTF[i] <- TRUE
+# allTF<- vector(length=length(trueHetName))
+# for(i in 1:length(trueHetName) ){
+#     index<- trueHetName[i]
+#     if( any(which(index >= uniqueCnvRegion2[,1] & index <= uniqueCnvRegion2[,2]  ))  ){
+#         allTF[i] <- TRUE
+#     }
+# }
+
+allTF<- sapply(trueHetName, function(x){
+    if( any((x >= uniqueCnvRegion[,1] & x <= uniqueCnvRegion[,2]  ))  ){
+        return(TRUE)
     }
-}
+    return(FALSE)
+})
+
+# allTFPot<- sapply(potHetName, function(x){
+#     if( any((x >= uniqueCnvRegion[,1] & x <= uniqueCnvRegion[,2]  ))  ){
+#         return(TRUE)
+#     }
+#     return(FALSE)
+# })
+
+
 summary(allTF)
 count_T<- sum(allTF)
 count_F<- length(allTF)-count_T
 
+
+
+
 cat(paste0(fullTitle, " M2 Major component"), " & ",
-    paste(count_F,  count_T, formatC(count_T/length(cnvTF)), sep=" & "),
+    paste(count_F,  count_T, formatC(count_T/length(allTF)), sep=" & "),
     " \\\\ \\hline" , file=cnvResultFileName, append=TRUE, fill=TRUE)
 
 

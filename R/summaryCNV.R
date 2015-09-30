@@ -71,7 +71,7 @@ p<- 1
 
 cnvResultFileName<- paste0(latexDir, "CNV_", projectName, ".tex")
 
-prefix<- paste0("\\begin{tabular}{|c|c|c|c|}
+prefix<- paste0("\\begin{tabular}{|c|ccc|}
     \\hline \\multicolumn{4}{|c|}{Copy number variation (CNV) summary}\\\\ \\hline
     Dataset & Not CNV & CNV & CNV proportion \\\\ \\hline")
 sufix<- "\\end{tabular}"
@@ -89,9 +89,10 @@ cnvFile<- read.table(paste0(cnvDir, "CNV_C", chromosomeIndex, "_list"))
 
 # cnvRegion<- cnvFile[, 2:3]
 # table(cnvFile[,1])
-cnvRegion<- cnvFile[cnvFile[,1]=="copy_number_variation" | 
-                    cnvFile[,1]=="copy_number_gain" | 
-                    cnvFile[,1]=="copy_number_loss", 2:3]
+cnvRegion<- cnvFile[cnvFile[,1]=="copy_number_variation" 
+#                     cnvFile[,1]=="copy_number_gain" | 
+#                    cnvFile[,1]=="copy_number_loss"
+                    , 2:3]
 
 setwd(fullPath)
 maxModel<- extractMaxModel(fullPath)
@@ -122,16 +123,24 @@ uniqueCnvRegion<- unique(cnvRegion)
 
 
 cnvTF<- vector(length=length(falsePosPosition))
-for(i in 1:length(falsePosPosition) ){
-    index<- falsePosPosition[i]
-    if( any(which(index >= uniqueCnvRegion[,1] & index <= uniqueCnvRegion[,2]  ))  ){
-        cnvTF[i] <- TRUE
-    }
-}
+# for(i in 1:length(falsePosPosition) ){
+#     index<- falsePosPosition[i]
+#     if( any(which(index >= uniqueCnvRegion[,1] & index <= uniqueCnvRegion[,2]  ))  ){
+#         cnvTF[i] <- TRUE
+#     }
+# }
+
+cnvTF<- sapply(falsePosPosition, function(x){
+        if( any((x >= uniqueCnvRegion[,1] & x <= uniqueCnvRegion[,2]  ))  ){
+            return(TRUE)
+        }
+        return(FALSE)
+    })
 
 summary(cnvTF)
 count_T<- sum(cnvTF)
 count_F<- length(cnvTF)-count_T
+
 cat(paste0(fullTitle, " False positive sites"), " & ",
     paste(count_F,  count_T, formatC(count_T/length(cnvTF)), sep=" & "),
     " \\\\ " , file=cnvResultFileName, append=TRUE, fill=TRUE)
@@ -142,15 +151,24 @@ allTF<- vector(length=length(trueHetName))
 for(i in 1:length(trueHetName) ){
     index<- trueHetName[i]
     if( any(which(index >= uniqueCnvRegion[,1] & index <= uniqueCnvRegion[,2]  ))  ){
-        cnvTF[i] <- TRUE
+        allTF[i] <- TRUE
     }
 }
+
+allTF<- sapply(trueHetName, function(x){
+        if( any((x >= uniqueCnvRegion[,1] & x <= uniqueCnvRegion[,2]  ))  ){
+            return(TRUE)
+        }
+        return(FALSE)
+    })
+
+
 summary(allTF)
 count_T<- sum(allTF)
 count_F<- length(allTF)-count_T
 
 cat(paste0(fullTitle, " All heterozygous"), " & ",
-    paste(count_F,  count_T, formatC(count_T/length(cnvTF)), sep=" & "),
+    paste(count_F,  count_T, formatC(count_T/length(allTF)), sep=" & "),
     " \\\\ \\hline" , file=cnvResultFileName, append=TRUE, fill=TRUE)
 # unique( cbind( rep(1:2, 60), rep(1:5, 24)) )
 

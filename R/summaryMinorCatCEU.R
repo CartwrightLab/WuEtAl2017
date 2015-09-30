@@ -69,15 +69,18 @@ setwd(pwd)
 p<- 8
 p<- 1
 
-cnvResultFileName<- paste0(latexDir, "MapMinorCat_", projectName, ".tex")
+cnvResultFileName<- paste0(latexDir, "MapMinorCatBICPH_", projectName, ".tex")
 
-prefix<- paste0("\\begin{tabular}{|c|c|c|c|c|c|}
-    \\hline \\multicolumn{6}{|c|}{Non-major categories summary}\\\\ \\hline
-    Dataset & NO. false heterozygous, & No. true heterozygous & CNV & CNV & CNV proportion \\\\ \\hline")
+prefix<- paste0("\\begin{tabular}{|c|ccc|ccc|}
+    \\hline \\multicolumn{7}{|c|}{Non-major categories summary}\\\\ \\hline
+    Dataset & FH & TH & FH proportion & CNV & CNV & CNV proportion \\\\ \\hline")
 sufix<- "\\end{tabular}"
 
-BICIndexList<- c(4,4,4,4,4,4,4,6)
+BICIndexList<- c(2,2,2,2,2,2,2,3)*2 #TH
+BICIndexList<- c(3,4,4,5,4,5,3,6)*2 #PH
 cat(prefix, file=cnvResultFileName, fill=TRUE)
+
+
 for(p in 1:length(subNameList) ){
 
 subName<- subNameList[p]
@@ -149,20 +152,23 @@ table(predFalsePos %in% trueHetPos)
 )
 
 cnvTF<- vector(length=length(predFalsePos))
-#this is stupid! rewrite!
-for(i in 1:length(predFalsePos) ){
-    index<- predFalsePos[i]
-    if( any(which(index >= uniqueCnvRegion[,1] & index <= uniqueCnvRegion[,2]  ))  ){
-        cnvTF[i] <- TRUE
-    }
-}
+cnvTF<- sapply(predFalsePos, function(x){
+            if( any((x >= uniqueCnvRegion[,1] & x <= uniqueCnvRegion[,2]  ))  ){
+                return(TRUE)
+            }
+            return(FALSE)
+        })
+
+
 
 summary(cnvTF)
 count_T<- sum(cnvTF)
 count_F<- length(cnvTF)-count_T
 
+xx<- table(predHetPos %in% trueHetPos)
 cat(paste0(fullTitle, " & "),
-    paste(predResult, " & ", collapse=""),
+    paste(predResult, " & ", collapse=""), formatC(predResult[1]/sum(predResult)), " & ",
+#     paste(xx, " & ", collapse=""), (xx[2]/sum(xx)), " & ",
     paste(count_F,  count_T, formatC(count_T/length(cnvTF)), sep=" & "),
     " \\\\ \\hline" , file=cnvResultFileName, append=TRUE, fill=TRUE)
 
@@ -186,3 +192,5 @@ cat(paste0(fullTitle, " & "),
 
 }
 cat(sufix, file=cnvResultFileName, fill=T, append=T)
+
+
