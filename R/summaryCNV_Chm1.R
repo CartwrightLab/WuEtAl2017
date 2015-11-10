@@ -76,8 +76,7 @@ prefix<- paste0("\\begin{tabular}{|c|ccc|}
     Dataset & Not CNV & CNV & CNV proportion \\\\ \\hline")
 sufix<- "\\end{tabular}"
 
-
-cnvFile<- read.table(paste0(cnvDir, "DGV_GRCh37_hg19_variants_subset.txt"), header=T)
+# cnvFile<- read.table(paste0(cnvDir, "DGV_GRCh37_hg19_variants_subset.txt"), header=T)
 
     
 cat(prefix, file=cnvResultFileName, fill=TRUE)
@@ -89,8 +88,7 @@ subFolders <- paste0(subName, "/original/base_count/")
 fullPath <- file.path(pwd, subFolders)
 chromosomeIndex<- gsub(".*_C([0-9]+)", "\\1", subName)
 # cnvFile<- read.table(paste0(cnvDir, "CNV_C", chromosomeIndex, "_list"))
-
-cnvChromosome<- cnvFile[cnvFile[,2]==chromosomeIndex & cnvFile[,5]=="CNV",]
+# cnvChromosome<- cnvFile[cnvFile[,2]==chromosomeIndex & cnvFile[,5]=="CNV",]
 # cnvRegion<- cnvFile[, 2:3]
 # table(cnvFile[,1])
 # cnvRegion<- cnvFile[cnvFile[,1]=="copy_number_variation" 
@@ -98,9 +96,16 @@ cnvChromosome<- cnvFile[cnvFile[,2]==chromosomeIndex & cnvFile[,5]=="CNV",]
 #                    cnvFile[,1]=="copy_number_loss"
 #                     , 2:3]
 
-cnvRegion<- cnvChromosome[,3:4]
-uniqueCnvRegion<- unique(cnvRegion)
-# 
+
+# cnvRegion<- cnvChromosome[,3:4]
+# uniqueCnvRegion<- unique(cnvRegion)
+
+
+d1<- read.table(paste0(cnvDir,"CHM1_1.1_ch",chromosomeIndex), header=T)
+# d11<- unique(d1[,2:3])
+uniqueCnvRegion<- unique(d1[,2:3])
+
+ 
 # aa=apply(uniqueCnvRegion,1,diff)
 # quantile(aa,seq(0.8,0.99, by=0.01) )
 # uniqueCnvRegion2<- uniqueCnvRegion[aa< 150000,]
@@ -150,13 +155,13 @@ trueHetName<- potHetName[index]
 falsePosPosition<- potHetName[!index]
 
 
-cnvTF<- vector(length=length(falsePosPosition))
-for(i in 1:length(falsePosPosition) ){
-    index<- falsePosPosition[i]
-    if( any(which(index >= uniqueCnvRegion[,1] & index <= uniqueCnvRegion[,2]  ))  ){
-        cnvTF[i] <- TRUE
-    }
-}
+
+cnvTF<- sapply(falsePosPosition, function(x){
+        if( any((x >= uniqueCnvRegion[,1] & x <= uniqueCnvRegion[,2]  ))  ){
+            return(TRUE)
+        }
+        return(FALSE)
+    })
 
 summary(cnvTF)
 count_T<- sum(cnvTF)
@@ -168,13 +173,7 @@ cat(paste0(fullTitle, " M2 Minor component"), " & ",
 
 
 trueHetName<- as.numeric(trueHetName)
-# allTF<- vector(length=length(trueHetName))
-# for(i in 1:length(trueHetName) ){
-#     index<- trueHetName[i]
-#     if( any(which(index >= uniqueCnvRegion2[,1] & index <= uniqueCnvRegion2[,2]  ))  ){
-#         allTF[i] <- TRUE
-#     }
-# }
+
 
 allTF<- sapply(trueHetName, function(x){
     if( any((x >= uniqueCnvRegion[,1] & x <= uniqueCnvRegion[,2]  ))  ){

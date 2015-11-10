@@ -73,14 +73,16 @@ colSumDataRef<- colSums(plotData)
 
 freqDataRef<- plotData/rowSumDataRef
 # freqDataRefDirty<- dataRefDirty/rowSumDataRefDirty
-
+subName2<- gsub("_C", " Chr", subName)
 
 maxModel<- extractMaxModel(fullPath, isCEU=isCEU)
 whichIsDirty <- grepl("_[0-9]D",names(maxModel))
 whichIsP <- grepl("_[0-9]P",names(maxModel))
-header<- gsub("_" , "", names(maxModel) )
-header<- gsub("D" , "F", header )
-header<- gsub("P" , "R", header )
+header<- gsub("_" , " M", names(maxModel) )
+header<- gsub("D" , " FD", header )
+header<- gsub("P" , " RD", header )
+
+header<-paste(subName2, header)
 
 plotTitle <- paste0("qqPlots_", subName, ".pdf") 
 qqplotFile<- file.path(latexDir, plotTitle)
@@ -100,7 +102,7 @@ ll <- sum(log(prob)*colSumDataRef)
 
 b <- rmultinomial(length(rowSumDataRef), rowSumDataRef, prob)
 z <- b/rowSums(b)
-plotqq(z, freqDataRef, "\n**** Multinomial ****\n") #, xlim=c(0.8,1), ylim=c(0.8,1))
+plotqq(z, freqDataRef, paste0("\n**** Multinomial ", subName2, " ****\n") ) #, xlim=c(0.8,1), ylim=c(0.8,1))
 
 
 #multinomial (with ref bias)

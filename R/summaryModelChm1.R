@@ -161,8 +161,8 @@ header<- names(latexTable)
 # header<- paste(subName, 1:length(latexTable), sep=" M" )
 header<- paste("CHM1", header)
 header<- gsub("_" , "M", header)
-header<- gsub("D" , "F", header)
-header<- gsub("P" , "R", header) 
+header<- gsub("D" , " FD", header)
+header<- gsub("P" , " RD", header) 
  
 prefix<- paste0("\\begin{tabular}{|c|cc|cc|c|c|c|}
     \\hline \\multicolumn{8}{|c|}{Parameter estimates ",fullTitle,"}\\\\ \\hline
@@ -201,7 +201,7 @@ fileMaxLikelihoodLatexTabel <- file.path(latexDir, paste0(subName, "_maxLikeliho
 
 prefix<- paste0("\\begin{tabular}{|c|c|c|c|c|c|c|}
     \\hline \\multicolumn{7}{|c|}{",fullTitle," } \\\\ \\hline
-     Model & lnL & lnL P & AIC & BIC & AIC P& BIC P\\\\ \\hline")
+     Model & FD lnL & RD lnL & FD AIC & RD AIC & FD AIC& RD BIC\\\\ \\hline")
 sufix<- "\\hline\n\\end{tabular}"
 #      Model & lnL & AIC & BIC \\\\ \\hline")
 # maxLiTable<- matrix(ncol=3, nrow=length(modelLikelihood) )
@@ -237,7 +237,7 @@ maxLikelihoodLatex<- apply(maxLiTable,1,function(y){
 
 cat(prefix, file=fileMaxLikelihoodLatexTabel, fill=T)
 for(i in 1:length(maxLikelihoodLatex) ){
-    latex<- paste0(header[i], " & ", maxLikelihoodLatex[i], " \\\\ ")
+    latex<- paste0("Components ", i , " & ", maxLikelihoodLatex[i], " \\\\ ")
     cat(latex, file=fileMaxLikelihoodLatexTabel, fill=T, append=T)
 }
 cat(sufix, file=fileMaxLikelihoodLatexTabel, fill=T, append=T)

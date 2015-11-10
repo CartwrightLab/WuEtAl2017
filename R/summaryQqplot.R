@@ -62,15 +62,18 @@ rowSumDataRefDirty<- rowSums(dataRefDirty)
 freqDataRef<- dataRef/rowSumDataRef
 freqDataRefDirty<- dataRefDirty/rowSumDataRefDirty
 
+subName2<- gsub("_C", " Chr", subName)
 
 maxModel<- extractMaxModel(fullPath)
 whichIsDirty <- grepl("_[0-9]D",names(maxModel))
 header<- gsub("hets_" , "", names(maxModel) )
+header<- gsub(".*_", "M", header)
+header<-paste(subName2, header)
 
 qqplotFile<- file.path(latexDir, paste0("qqPlots_", subName, ".pdf") )
 
 
-pdf(file=qqplotFile, width=12, height=6)
+pdf(file=qqplotFile, width=12, height=6, title=qqplotFile)
 par(mai=c(0.6,0.7,0.2,0.1), mfrow=c(1,3), 
     cex.main=1.2^4,cex.lab=1.2^2, 
     omi=c(0,0,0.5,0) )
@@ -85,7 +88,7 @@ ll <- sum(log(prob)*colSumDataRef)
 
 b <- rmultinomial(length(rowSumDataRef), rowSumDataRef, prob)
 z <- b/rowSums(b)
-plotqq(z, freqDataRef, "\n**** Multinomial ****\n")
+plotqq(z, freqDataRef, paste0("\n**** Multinomial ", subName2, " ****\n") )
 
 
 #multinomial (with ref bias)
@@ -95,7 +98,7 @@ ll <- sum(log(prob)* colSumDataRef)
 
 b <- rmultinomial(length(rowSumDataRef), rowSumDataRef, prob)
 z <- b/rowSums(b)
-plotqq(z, freqDataRef, "\n**** Biased Multinomial ****\n")
+plotqq(z, freqDataRef, paste0("\n**** Biased Multinomial ", subName2, " ****\n"))
 
 for( m in 1:length(maxModel)) {
 
@@ -121,6 +124,7 @@ for( m in 1:length(maxModel)) {
 dev.off()
 embedFonts(qqplotFile, options="-DPDFSETTINGS=/prepress")
 # } # match (p in 1:length(subNameList) ){
+
 
 ########################################
 # originally run it with dm.R

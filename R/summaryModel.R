@@ -157,6 +157,7 @@ modelParametersSummary3[[2]]<- matrix(c(prob_MNB,rep(NA,6)), nrow=1, byrow=T)
 ## latex parameter table    
 # formatC(x, digits=3, width=8, format="g")
 # sprintf("%8.3g" , x)
+mpsName<- names(modelParametersSummary3)
 latexTable<- sapply(modelParametersSummary3, function(x){
     newOrder<-rev(order(x[,8]))
     x<- x[newOrder,]
@@ -173,7 +174,9 @@ latexTable<- sapply(modelParametersSummary3, function(x){
 
 header<- names(latexTable)
 header<- gsub("hets_" , "", header)
-header<- gsub("_" , "M", header)
+header<- gsub("_" , " M", header)
+header[-(1:2)]<- gsub("$", " TH", header[-(1:2)])
+header<- gsub("D TH", " PH", header)
 
 prefix<- paste0("\\begin{tabular}{|c|ccc|ccc|c|c|c|}
     \\hline \\multicolumn{10}{|c|}{Parameter estimates ",fullTitle,"}\\\\ \\hline
@@ -213,17 +216,17 @@ fileMaxLikelihoodLatexTabel <- file.path(latexDir, paste0(subName, "_maxLikeliho
 
 prefix<- paste0("\\begin{tabular}{|c|c|c|c|c|c|c|}
     \\hline \\multicolumn{7}{|c|}{",fullTitle," } \\\\ \\hline
-    Model & TP lnL & FP lnL & TP AIC & FP AIC & TP BIC & FP BIC \\\\ \\hline")
+    Model & TH lnL & PH lnL & TH AIC & PH AIC & TH BIC & PH BIC \\\\ \\hline")
 sufix<- "\\hline\n\\end{tabular}"
 
 maxLiTable<- matrix(ncol=6, nrow=length(modelLikelihood)/2 )
 numFreeP<- seq(3,by=4,length=6)
 coefBIC<- c(log(NROW(dataRef)), log(NROW(dataRefDirty)) )
 for(i in 1:NROW(maxLiTable) ){
-    t1<- c(modelLikelihood[i*2-1], modelLikelihood[i*2])
-    t2<- -2*t1 + 2*numFreeP[i]
-    t3<- -2*t1 + coefBIC*numFreeP[i]
-    maxLiTable[i,]<- c(t1, t2, t3)
+    t_li<- c(modelLikelihood[i*2-1], modelLikelihood[i*2])
+    t_AIC<- -2*t_li + 2*numFreeP[i]
+    t_BIC<- -2*t_li + coefBIC*numFreeP[i]
+    maxLiTable[i,]<- c(t_li, t_AIC, t_BIC)
 }
 minIndex<- apply(maxLiTable,2,which.min)
 maxLiTable<- formatC(maxLiTable,  digits=2, width=12, format="f")
@@ -238,7 +241,7 @@ maxLikelihoodLatex<- apply(maxLiTable,1,function(y){
 
 cat(prefix, file=fileMaxLikelihoodLatexTabel, fill=T)
 for(i in 1:length(maxLikelihoodLatex) ){
-    latex<- paste0(header[i*2-1], " & ", maxLikelihoodLatex[i], " \\\\ ")
+    latex<- paste0("Components ", i , " & ", maxLikelihoodLatex[i], " \\\\ ")
     cat(latex, file=fileMaxLikelihoodLatexTabel, fill=T, append=T)
 }
 cat(sufix, file=fileMaxLikelihoodLatexTabel, fill=T, append=T)
@@ -289,11 +292,11 @@ if(isCEU){
     fileSnpCountLatexTabel <- file.path(latexDir, paste0("snpCountLatexTable_CHM1.tex") )
 }
 
-
+#     \\hline \\multicolumn{6}{|c|}{", "" ," } \\
 prefix<- paste0("\\begin{tabular}{|c|c|c|c|c|c|}
-    \\hline \\multicolumn{6}{|c|}{", "" ," } \\\\ \\hline
-    Dataset & Method (1) & Method (2) & Both methods & 
-    True heterozygotes & Proportion of TH
+    \\hline 
+    Dataset & Individuals caller & Trio caller & Both callers & 
+    True heterozygotes (TH) & Proportion of TH
     \\\\ \\hline")
 sufix<- "\\hline\n\\end{tabular}"
 
@@ -311,7 +314,7 @@ for(p in length(subNameList):1 ){
     dat <- read.delim(paste(fullPath, hets_byref, sep=""), header=TRUE)
 
     name2<- gsub("_" , " ", subName)
-    
+    name2<- gsub("_C" , " Chr", subName)
     if(isCEU){
         countThree<- table(dat$callby)[c(1,3,2)]
         countTH<- sum( (dat$callby == 2 & (dat$snp == 1 & dat$snpdif == 0)) ) 
