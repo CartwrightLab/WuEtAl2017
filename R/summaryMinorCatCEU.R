@@ -51,6 +51,12 @@ if(isCEU){
     "CEU 2012 Chromosome 10", "CEU 2012 Chromosome 21",
     "CEU 2013 Chromosome 10", "CEU 2013 Chromosome 21"
     )
+    fullTitleList<- c(
+    "CEU10 Chr10", "CEU10 Chr21",
+    "CEU11 Chr10", "CEU11 Chr21",
+    "CEU12 Chr10", "CEU12 Chr21",
+    "CEU13 Chr10", "CEU13 Chr21"
+    )
     projectName<- "CEU"
 } else {
     pwd <- "/home/steven/Postdoc2/Project_MDM/CHM1/"
@@ -73,24 +79,26 @@ cnvResultFileName<- paste0(latexDir, "MapMinorCat_", projectName, ".tex")
 BICIndexList<- c(2,2,2,2,2,2,2,3)*2 #TH
 # cnvResultFileName<- paste0(latexDir, "MapMinorCatBICPH_", projectName, ".tex")
 # BICIndexList<- c(3,4,4,5,4,5,3,6)*2 #PH
-
-prefix<- paste0("\\begin{tabular}{|c|ccc|ccc|}
-    \\hline \\multicolumn{7}{|c|}{Non-major categories summary}\\\\ \\hline
-    Dataset & FH & TH & FH proportion & CNV & CNV & CNV proportion \\\\ \\hline")
-sufix<- "\\end{tabular}"
-
-
-# cnvFile<- read.table(paste0(cnvDir, "DGV_GRCh37_hg19_variants_subset.txt"), header=T)
-        
+    
 cnvFile1<- read.table(paste0(cnvDir, "Mills_deletions.csv"), sep=",", header=T)
 cnvFile1<-cnvFile1[cnvFile1[,1]=="NA12878",]
 cnvFile2<- read.table(paste0(cnvDir, "Mills_deletionsInsertions.csv"), sep=",", header=T)    
 cnvFile2<-cnvFile2[cnvFile2[,1]=="NA12878",]
 
+
+
+prefix<- paste0("\\begin{tabular}{|c|ccc|ccc|c|}
+    \\hline 
+    Dataset & FH & TH & FH proportion & Not CNV & CNV & CNV proportion & p-value \\\\ \\hline")
+sufix<- "\\end{tabular}"
+
+
+# cnvFile<- read.table(paste0(cnvDir, "DGV_GRCh37_hg19_variants_subset.txt"), header=T)
+
 cat(prefix, file=cnvResultFileName, fill=TRUE)
 
 
-for(p in 1:length(subNameList) ){
+for(p in length(subNameList):1 ){
 
 subName<- subNameList[p]
 fullTitle<- fullTitleList[p]
@@ -173,9 +181,36 @@ potenHetPos<- as.numeric(rownames(dataRefDirty))
 predMajorPos<- potenHetPos[predIndex]
 predMinorPos<- potenHetPos[!predIndex]
 
+
+##### Major
+majorTF<- sapply(predMajorPos, function(x){
+        if( any((x >= uniqueCnvRegion[,1] & x <= uniqueCnvRegion[,2]  ))  ){
+            return(TRUE)
+        }
+        return(FALSE)
+    })
+    
+summary(majorTF)
+majorCount_T<- sum(majorTF)
+majorCount_F<- sum(!majorTF)
+cat(table(majorTF), formatC(majorCount_T/length(majorTF)), "\n")
+
+predMajorResult<- table(predMajorPos %in% trueHetPos)
+
+# cat(paste0(fullTitle, " "), " & ",
+#     paste(predResult, " & ", collapse=""), 
+#     formatC(predResult[1]/sum(predResult)), " & ",
+#     paste(count_F,  count_T, formatC(count_T/length(minorTF)), sep=" & "),
+#     " \\\\ \\hline" , file=cnvResultFileName, append=TRUE, fill=TRUE)
+    
+# cat(paste0(fullTitle, " Major component"), " & ",
+#     paste(count_F,  count_T, formatC(count_T/length(minorTF)), sep=" & "),
+#     " \\\\ \\hline" , file=cnvResultFileName, append=TRUE, fill=TRUE)
+
+#### Minor
 predResult<-table(predMinorPos %in% trueHetPos)
 
-cnvTF<- sapply(predMinorPos, function(x){
+minorTF<- sapply(predMinorPos, function(x){
             if( any((x >= uniqueCnvRegion[,1] & x <= uniqueCnvRegion[,2]  ))  ){
                 return(TRUE)
             }
@@ -183,45 +218,27 @@ cnvTF<- sapply(predMinorPos, function(x){
         })
 
 
-table(cnvTF)
-count_T<- sum(cnvTF)
-count_F<- sum(!cnvTF)
-cat(table(cnvTF), formatC(count_T/length(cnvTF)), "\n")
+table(minorTF)
+MinorCount_T<- sum(minorTF)
+MinorCount_F<- sum(!minorTF)
+cat(table(minorTF), formatC(MinorCount_T/length(minorTF)), "\n")
 
 
-cat(paste0(fullTitle, " & "),
-    paste(predResult, " & ", collapse=""), formatC(predResult[1]/sum(predResult)), " & ",
-    paste(count_F,  count_T, formatC(count_T/length(cnvTF)), sep=" & "),
-    " \\\\ \\hline" , file=cnvResultFileName, append=TRUE, fill=TRUE)
+combinedCnvCount<- matrix(c(table(majorTF), table(minorTF)), nrow=2, byrow=T)
+r<- fisher.test(combinedCnvCount)
 
-    
-##########
-##########
 
-allTF<- sapply(predMajorPos, function(x){
-        if( any((x >= uniqueCnvRegion[,1] & x <= uniqueCnvRegion[,2]  ))  ){
-            return(TRUE)
-        }
-        return(FALSE)
-    })
-    
-summary(allTF)
-count_T<- sum(allTF)
-count_F<- sum(!allTF)
-cat(table(allTF), formatC(count_T/length(allTF)), "\n")
-
-predMajorResult<- table(predMajorPos %in% trueHetPos)
-
-cat(paste0(fullTitle, " Major component"), " & ",
+cat(paste0(fullTitle, " "), " & ",
     paste(predMajorResult, " & ", collapse=""), 
     formatC(predMajorResult[1]/sum(predMajorResult)), " & ",
-    paste(count_F,  count_T, formatC(count_T/length(allTF)), sep=" & "),
-    " \\\\ \\hline" , file=cnvResultFileName, append=TRUE, fill=TRUE)
+    paste(majorCount_F,  majorCount_T, formatC(majorCount_T/length(majorTF)), sep=" & "),
+    " & " ,formatC(r$p.value), "\\\\ " , file=cnvResultFileName, append=TRUE, fill=TRUE)
 
     
-# cat(paste0(fullTitle, " Major component"), " & ",
-#     paste(count_F,  count_T, formatC(count_T/length(cnvTF)), sep=" & "),
-#     " \\\\ \\hline" , file=cnvResultFileName, append=TRUE, fill=TRUE)
+cat( " & ",
+    paste(predResult, " & ", collapse=""), formatC(predResult[1]/sum(predResult)), " & ",
+    paste(MinorCount_F,  MinorCount_T, formatC(MinorCount_T/length(minorTF)), sep=" & "),
+    " & \\\\ \\hline" , file=cnvResultFileName, append=TRUE, fill=TRUE)
 
 
 }

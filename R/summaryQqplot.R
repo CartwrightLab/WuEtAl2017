@@ -67,7 +67,8 @@ subName2<- gsub("_C", " Chr", subName)
 maxModel<- extractMaxModel(fullPath)
 whichIsDirty <- grepl("_[0-9]D",names(maxModel))
 header<- gsub("hets_" , "", names(maxModel) )
-header<- gsub(".*_", "M", header)
+header<- gsub(".*_", "", header)
+header<- gsub("$", " components", header)
 header<-paste(subName2, header)
 
 qqplotFile<- file.path(latexDir, paste0("qqPlots_", subName, ".pdf") )
@@ -88,7 +89,7 @@ ll <- sum(log(prob)*colSumDataRef)
 
 b <- rmultinomial(length(rowSumDataRef), rowSumDataRef, prob)
 z <- b/rowSums(b)
-plotqq(z, freqDataRef, paste0("\n**** Multinomial ", subName2, " ****\n") )
+plotqq(z, freqDataRef, paste0("\nMultinomial ", subName2, "\n") )
 
 
 #multinomial (with ref bias)
@@ -98,7 +99,7 @@ ll <- sum(log(prob)* colSumDataRef)
 
 b <- rmultinomial(length(rowSumDataRef), rowSumDataRef, prob)
 z <- b/rowSums(b)
-plotqq(z, freqDataRef, paste0("\n**** Biased Multinomial ", subName2, " ****\n"))
+plotqq(z, freqDataRef, paste0("\nBiased Multinomial ", subName2, " \n"))
 
 for( m in 1:length(maxModel)) {
 
@@ -115,8 +116,12 @@ for( m in 1:length(maxModel)) {
 #         ff<- freqDataRefDirty
         next
     }
-    
-    plotqq(z, ff, paste0("\n**** Dirichlet-Multinomial ", header[m] ," ****\n") )
+    main<- paste0("\nMixture of Dirichlet Multinomial ", header[m] ," \n")
+    if(m==1){
+        main<- gsub(" 1 components", "", main)
+        main<- gsub("Mixture of ", "", main)
+    }
+    plotqq(z, ff, main)
 
 }
 

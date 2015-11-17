@@ -46,10 +46,10 @@ if(isCEU){
     )
 
     fullTitleList<- c(
-    "CEU 2010 Chromosome 10", "CEU 2010 Chromosome 21",
-    "CEU 2011 Chromosome 10", "CEU 2011 Chromosome 21",
-    "CEU 2012 Chromosome 10", "CEU 2012 Chromosome 21",
-    "CEU 2013 Chromosome 10", "CEU 2013 Chromosome 21"
+    "CEU10 Chr10", "CEU10 Chr21",
+    "CEU11 Chr10", "CEU11 Chr21",
+    "CEU12 Chr10", "CEU12 Chr21",
+    "CEU13 Chr10", "CEU13 Chr21"
     )
     projectName<- "CEU"
 } else {
@@ -71,9 +71,9 @@ p<- 1
 
 cnvResultFileName<- paste0(latexDir, "CNV_", projectName, ".tex")
 
-prefix<- paste0("\\begin{tabular}{|c|ccc|}
-    \\hline \\multicolumn{4}{|c|}{Copy number variation (CNV) summary}\\\\ \\hline
-    Dataset & Not CNV & CNV & CNV proportion \\\\ \\hline")
+prefix<- paste0("\\begin{tabular}{|cc|ccc|c|}
+    \\hline 
+    Dataset & & Not CNV & CNV & CNV proportion & p-value \\\\ \\hline")
 sufix<- "\\end{tabular}"
 
 # cnvFile<- read.table(paste0(cnvDir, "DGV_GRCh37_hg19_variants_subset.txt"), header=T) #all human
@@ -85,7 +85,7 @@ cnvFile2<- read.table(paste0(cnvDir, "Mills_deletionsInsertions.csv"), sep=",", 
 cnvFile2<-cnvFile2[cnvFile2[,1]=="NA12878",]
 
 cat(prefix, file=cnvResultFileName, fill=TRUE)
-for(p in 1:length(subNameList) ){
+for(p in length(subNameList):1 ){
 
 subName<- subNameList[p]
 fullTitle<- fullTitleList[p]
@@ -178,17 +178,13 @@ cnvTF<- sapply(falsePosPosition, function(x){
     })
 
 summary(cnvTF)
-count_T<- sum(cnvTF)
-count_F<- sum(!cnvTF)
+cnvCount_T<- sum(cnvTF)
+cnvCount_F<- sum(!cnvTF)
 
-cat(count_F,  count_T, formatC(count_T/length(cnvTF)), "\n")
-
-cat(paste0(fullTitle, " False positive sites"), " & ",
-    paste(count_F,  count_T, formatC(count_T/length(cnvTF)), sep=" & "),
-    " \\\\ " , file=cnvResultFileName, append=TRUE, fill=TRUE)
+cat(cnvCount_F,  cnvCount_T, formatC(cnvCount_T/length(cnvTF)), "\n")
 
 # 
-# trueHetName<- as.numeric(trueHetName)
+trueHetName<- as.numeric(trueHetName)
 # # allTF<- vector(length=length(trueHetName))
 # # for(i in 1:length(trueHetName) ){
 # #     index<- trueHetName[i]
@@ -197,25 +193,36 @@ cat(paste0(fullTitle, " False positive sites"), " & ",
 # #     }
 # # }
 # 
-# allTF<- sapply(trueHetName, function(x){
-#         if( any((x >= uniqueCnvRegion[,1] & x <= uniqueCnvRegion[,2]  ))  ){
-#             return(TRUE)
-#         }
-#         return(FALSE)
-#     })
-# 
-# 
-# summary(allTF)
-# count_T<- sum(allTF)
-# count_F<- sum(!allTF)
-# 
-# cat(count_F,  count_T, formatC(count_T/length(allTF)), "\n")
-# 
-# 
-# cat(paste0(fullTitle, " True heterozygous"), " & ",
-#     paste(count_F,  count_T, formatC(count_T/length(allTF)), sep=" & "),
-#     " \\\\ \\hline" , file=cnvResultFileName, append=TRUE, fill=TRUE)
-# # unique( cbind( rep(1:2, 60), rep(1:5, 24)) )
+allTF<- sapply(trueHetName, function(x){
+        if( any((x >= uniqueCnvRegion[,1] & x <= uniqueCnvRegion[,2]  ))  ){
+            return(TRUE)
+        }
+        return(FALSE)
+    })
+
+
+summary(allTF)
+count_T<- sum(allTF)
+count_F<- sum(!allTF)
+
+cat(count_F,  count_T, formatC(count_T/length(allTF)), "\n")
+ 
+
+combinedCnvCount<- matrix(c(table(cnvTF), table(allTF)), nrow=2, byrow=T)
+r<- fisher.test(combinedCnvCount)
+
+
+
+cat(paste0(fullTitle, " & FH"), " & ",
+    paste(cnvCount_F,  cnvCount_T, formatC(cnvCount_T/length(cnvTF)), sep=" & "),
+    " & " ,formatC(r$p.value), " \\\\ " , file=cnvResultFileName, append=TRUE, fill=TRUE)
+
+
+cat(paste0("" , " & TH"), " & ",
+    paste(count_F,  count_T, formatC(count_T/length(allTF)), sep=" & "),
+    " & \\\\ \\hline" , file=cnvResultFileName, append=TRUE, fill=TRUE)
+# unique( cbind( rep(1:2, 60), rep(1:5, 24)) )
+
 
 }
 cat(sufix, file=cnvResultFileName, fill=T, append=T)

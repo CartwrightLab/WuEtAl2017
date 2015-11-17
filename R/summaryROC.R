@@ -72,16 +72,20 @@ if ( file.exists(fileMaxLikelihoodTabel) ){
     stop(paste0("File does not exist: ", fileMaxLikelihoodTabel))
 }
 
- refIndex<- (dataFull$pos %in% as.numeric( rownames(dataRef)) )
+#  refIndex<- (dataFull$pos %in% as.numeric( rownames(dataRef)) )
 # snpTfClean <- (dataFull$snp == 1 & dataFull$snpdif == 0)[refIndex]
 refDirtyIndex<- (dataFull$pos %in% as.numeric( rownames(dataRefDirty)) )
 snpTf <- (dataFull$snp == 1 & dataFull$snpdif == 0)[refDirtyIndex]
 
 whichIsDirty <- grepl("_[0-9]D",names(maxLikelihoodTable))
-header<- gsub("hets_" , "", names(maxLikelihoodTable) )
+header<- gsub("hets_CEU13" , "", names(maxLikelihoodTable) )
+header<- gsub("D", " components", header)
+header<- gsub("_", " ", header)
+
+
 
 rocPlotFile<- file.path(latexDir, paste0("rocPlots_", subName, ".pdf") )
-pdf(file=rocPlotFile, width=12, height=8)
+pdf(file=rocPlotFile, width=12, height=8, title=rocPlotFile)
 par(mar=c(3,3,2,1), mgp=c(1.75, 0.6, 0), #mfrow=c(2,3), 
     cex.main=1.2^3, cex.lab=1.2^2, oma=c(0,0,2.5,0) )
 
@@ -110,15 +114,15 @@ for(m in whichDirtyIndex){
     allAUC[p, m/2] <- perfAuc@y.values[[1]]
     auc<- formatC(allAUC[p, m/2])
     legendAUC[m]<- auc
-    plot(perfRoc, main="", xlab="1 - specificity", ylab="Sensitivity", col=colIndex, lty=colIndex, lwd=3)
+    plot(perfRoc, main="", xlab="1 - specificity", ylab="Sensitivity", col=colIndex, lty=1, lwd=2)
     colIndex <- colIndex+1
     par(new=T)
 }
 
 
 
-legend(0.8,0.5, legend=paste(header[whichDirtyIndex], legendAUC[whichDirtyIndex]), col=1:5, lwd=3, lty=1:5)
-paste("ROC curve", header[m], "AUC:",auc)
+legend(0.7,0.5, legend=paste(header[whichDirtyIndex], legendAUC[whichDirtyIndex]), col=1:5, lwd=3, lty=1, title="Area under ROC curve")
+# paste("ROC curve", header[m], "AUC:",auc)
 
 mtext(fullTitle, outer=T, cex=2, line=0)
 
@@ -152,9 +156,9 @@ if(isCEU){
 } else{
     fileAucTable<- file.path(latexDir, paste0("AUC_summary_CHM1.tex") )
 }
-dataName<- gsub("_", "", subNameList)
+dataName<- gsub("_C", " Chr", subNameList)
 cat(prefix, file=fileAucTable, fill=T)
-for(i in 1:length(subNameList) ){
+for(i in length(subNameList):1 ){
     
     temp<- paste0(dataName[i], " & ", allAucLatex[i], " \\\\ \\hline")
     cat(temp, file=fileAucTable, fill=T, append=T)

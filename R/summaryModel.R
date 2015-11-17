@@ -295,7 +295,7 @@ if(isCEU){
 #     \\hline \\multicolumn{6}{|c|}{", "" ," } \\
 prefix<- paste0("\\begin{tabular}{|c|c|c|c|c|c|}
     \\hline 
-    Dataset & Individuals caller & Trio caller & Both callers & 
+    Dataset & Individual caller & Trio caller & Both callers & 
     True heterozygotes (TH) & Proportion of TH
     \\\\ \\hline")
 sufix<- "\\hline\n\\end{tabular}"
