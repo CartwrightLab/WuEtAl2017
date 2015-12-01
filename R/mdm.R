@@ -600,12 +600,12 @@ mdm <- function(x,f=1L,phi=NULL,p=NULL,phTol=100,cycles=1000,
 	# use initial parameters to define components
 	# follow with method of moments
 	if(fixStart) {
-		w <- mdmLogLikeCore(r$y,r$w,f,params)
-		wsum <- colSums(r$w*w$w)
-		for(m in 1:M) {
-			 params[m,] <- mdmSingleMoments(r$y[,-KK],r$w*w$w[,m])
-		}
-		f <- wsum/N
+            w <- mdmLogLikeCore(r$y,r$w,f,params)
+            wsum <- colSums(r$w*w$w)
+            for(m in 1:M) {
+                params[m,] <- mdmSingleMoments(r$y[,-KK],r$w*w$w[,m])
+            }
+            f <- wsum/N
 	}
 
 	# calculate likelihood and weights
