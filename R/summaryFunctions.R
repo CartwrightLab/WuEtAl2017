@@ -217,7 +217,7 @@ plotqq<- function(z, ff, outerText, xlim=c(0,1),ylim=c(0,1)){
         qqplot(z[,i],ff[,i],,xlab="Estimated Frequency",ylab="Observed Frequency",main=mains[i], xlim=xlim, ylim=ylim)
         abline(0,1)
     #   print(ad.stat.k(ff[,i],z[,i]))
-        if(i==1){
+        if(i==1 & numCat==2){
         
             count11<- sum(z[,1]==1 & ff[,1]==1) / NROW(z)
             legend(0.1, 1, paste0("Proportion of sites at (1,1)= ", formatC(count11)) )

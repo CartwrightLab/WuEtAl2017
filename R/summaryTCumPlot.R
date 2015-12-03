@@ -72,76 +72,6 @@ header<- gsub(".*_", "", header)
 header<- gsub("$", " components", header)
 header<-paste(subName2, header)
 
-qqplotFile<- file.path(latexDir, paste0("qqTPlots_", subName, ".pdf") )
-
-
-# pdf(file=qqplotFile, width=12, height=6, title=qqplotFile)
-# par(mai=c(0.6,0.7,0.2,0.1), mfrow=c(1,3), 
-#     cex.main=1.2^4,cex.lab=1.2^2, 
-#     omi=c(0,0,0.5,0) )
-
-# mains = c("Reference Allele", "Alternate Allele", "Error")
-
-#simple multinomial (no bias)
-p1<- (colSumDataRef[1]+colSumDataRef[2])/2
-prob <- c(p1, p1, colSumDataRef[3]) /sum(colSumDataRef)
-ll <- sum(log(prob)*colSumDataRef)
-# cat(sprintf("  ll = %0.16g\n", ll));#print(prob)
-
-b <- rmultinomial(length(rowSumDataRef), rowSumDataRef, prob)
-z <- b/rowSums(b)
-plotqq(z, freqDataRef, paste0("\nMultinomial ", subName2, "\n") )
-
-
-#multinomial (with ref bias)
-prob <- colSumDataRef / sum(colSumDataRef)
-ll <- sum(log(prob)* colSumDataRef)
-# cat(sprintf("  ll = %0.16g\n", ll));#print(prob)
-
-b <- rmultinomial(length(rowSumDataRef), rowSumDataRef, prob)
-z <- b/rowSums(b)
-plotqq(z, freqDataRef, paste0("\nBiased Multinomial ", subName2, " \n"))
-
-# for( m in 1:length(maxModel)) {
-# 
-#     #dirichlet-multinomial mixture
-#     mModel<- maxModel[[m]]
-#     if(! whichIsDirty[m]){
-#         b <- rmdm(length(rowSumDataRef), rowSumDataRef, mModel$f,
-#                     phi=mModel$params[,1], p=mModel$params[,2:4])
-#         z <- b/rowSums(b)
-#         ff<- freqDataRef    
-#     } else{
-# #         b <- rmdm(length(rowSumDataRefDirty), rowSumDataRefDirty, mModel$f,
-# #                     phi=mModel$params[,1], p=mModel$params[,2:4])
-# #         ff<- freqDataRefDirty
-#         next
-#     }
-#     main<- paste0("\nMixture of Dirichlet Multinomial ", header[m] ," \n")
-#     if(m==1){
-#         main<- gsub(" 1 components", "", main)
-#         main<- gsub("Mixture of ", "", main)
-#     }
-#     plotqq(z, ff, main)
-# 
-# }
-
-
-# dev.off()
-# embedFonts(qqplotFile, options="-DPDFSETTINGS=/prepress")
-# } # match (p in 1:length(subNameList) ){
-
-
-########################################
-# originally run it with dm.R
-# b <- rmdm(length(n),n,m3$param.p,m3$param.a)
-# #NOTE: difference between $param $parmas
-# # mdmParams should be $params but $params don't have class
-# class(m3$params)<- "mdmParams" ## Wont work if class not forwords
-# b <- rmdm(length(n),n,m3$f,m3$params)
-
-
-## Analyses
 
 readWeightTemp<- table(rowSumDataRef) / sum(table(rowSumDataRef))
 readWeight<- cbind(as.numeric(names(readWeightTemp)), readWeightTemp)
@@ -150,13 +80,126 @@ readWeight<- cbind(as.numeric(names(readWeightTemp)), readWeightTemp)
 
 allCumProb<- vector(length=150, mode="list")
 
+
+qqplotFile<- file.path(latexDir, paste0("qqTPlots_", subName, ".pdf") )
+
+
+pdf(file=qqplotFile, width=12, height=6, title=qqplotFile)
+par(mai=c(0.6,0.7,0.2,0.1), mfrow=c(1,3), 
+    cex.main=1.2^4,cex.lab=1.2^2, 
+    omi=c(0,0,0.5,0) )
+
+# mains = c("Reference Allele", "Alternate Allele", "Error")
+
 #simple multinomial (no bias)
 p1<- (colSumDataRef[1]+colSumDataRef[2])/2
-multiProb <- c(p1, p1, colSumDataRef[3]) /sum(colSumDataRef)
+prob <- c(p1, p1, colSumDataRef[3]) /sum(colSumDataRef)
+mModel$params<- matrix(c(0, prob),nrow=1)
+mModel$f<- 1
 
-m=3
+for( N in readWeight[,1]){
+#     cat(N, "\n")
+    allX<- allCombN(N)
+    prob<- apply(allX,1,function(y){dMDM3(y, mModel=mModel)})
+#    prob<- apply(allX,1,function(y){dmultinomial(y,prob=multiProb )})
+    allCumProb[[N]]<- collapseProb3Cat(allX, prob)
+}
 
-for( m in 1:which(!whichIsDirty) ) {
+par(mfrow=c(1,3))
+
+for(fetchIndex in 1:3){
+
+    size<- NROW(freqDataRef)
+#     size<- 1000
+    plotData<- freqDataRef[1:size, fetchIndex]
+    plotDataUnique<- unique(plotData)
+    plotExpeted<- rep(-1, length(plotDataUnique))
+    for(f in 1:length(plotDataUnique)){
+#             N<- rowSumDataRef[f]
+        freq<- plotDataUnique[f]
+        expect<- 0
+        
+        for( i in 1:NROW(readWeight)){
+            cumProb<- allCumProb[[ readWeight[i,1] ]]
+#             index<- findInterval(freq, cumProb[,4])
+#             cp<- cumProb[index, fetchIndex]
+            index<- cumProb[,4] <= freq
+            cp<- sum(cumProb[index, fetchIndex] )
+            expect<- expect + readWeight[i,2]*cp
+        }
+        plotExpeted[f]<- expect
+    }
+
+    plotCumData<- sapply(plotDataUnique, function(x){
+        sum(plotData<= x)/length(plotData)
+    })
+    
+    plot(plotExpeted, plotCumData, xlim=c(0,1), ylim=c(0,1), main=mains[fetchIndex], xlab="Expected cummulative frequency",ylab="Observed cummulative Frequency",) 
+    abline(0,1)
+    
+}
+outerText<- paste0("\nMultinomial ", subName2, "\n") 
+mtext(outerText, side=3, outer=T, line=-2, cex=2)
+
+
+
+#multinomial (with ref bias)
+prob <- colSumDataRef / sum(colSumDataRef)
+mModel$params<- matrix(c(0, prob),nrow=1)
+mModel$f<- 1
+
+
+for( N in readWeight[,1]){
+#     cat(N, "\n")
+    allX<- allCombN(N)
+    prob<- apply(allX,1,function(y){dMDM3(y, mModel=mModel)})
+#    prob<- apply(allX,1,function(y){dmultinomial(y,prob=multiProb )})
+    allCumProb[[N]]<- collapseProb3Cat(allX, prob)
+}
+
+par(mfrow=c(1,3))
+
+for(fetchIndex in 1:3){
+
+    size<- NROW(freqDataRef)
+#     size<- 1000
+    plotData<- freqDataRef[1:size, fetchIndex]
+    plotDataUnique<- unique(plotData)
+    plotExpeted<- rep(-1, length(plotDataUnique))
+    for(f in 1:length(plotDataUnique)){
+#             N<- rowSumDataRef[f]
+        freq<- plotDataUnique[f]
+        expect<- 0
+        
+        for( i in 1:NROW(readWeight)){
+            cumProb<- allCumProb[[ readWeight[i,1] ]]
+#             index<- findInterval(freq, cumProb[,4])
+#             cp<- cumProb[index, fetchIndex]
+            index<- cumProb[,4] <= freq
+            cp<- sum(cumProb[index, fetchIndex] )
+            expect<- expect + readWeight[i,2]*cp
+        }
+        plotExpeted[f]<- expect
+    }
+
+    plotCumData<- sapply(plotDataUnique, function(x){
+        sum(plotData<= x)/length(plotData)
+    })
+    
+    plot(plotExpeted, plotCumData, xlim=c(0,1), ylim=c(0,1), main=mains[fetchIndex], xlab="Expected cummulative frequency",ylab="Observed cummulative Frequency",) 
+    abline(0,1)
+    
+}
+outerText<- paste0("\nBiased Multinomial ", subName2, "\n") 
+mtext(outerText, side=3, outer=T, line=-2, cex=2)
+
+
+## Analyses
+
+# m=3
+mains = c("Reference Allele", "Alternate Allele", "Error")
+
+for( m in which(!whichIsDirty) ) {
 
     mModel<- maxModel[[m]]
     for( N in readWeight[,1]){
@@ -168,15 +211,17 @@ for( m in 1:which(!whichIsDirty) ) {
     }
 
     par(mfrow=c(1,3))
+    
     for(fetchIndex in 1:3){
 
         size<- NROW(freqDataRef)
     #     size<- 1000
-        plotData<- cbind(freqDataRef[1:size, fetchIndex],rep(-1,size))
-        plotExpeted<- rep(-1,size)
-        for(f in 1:size){
-            N<- rowSumDataRef[f]
-            freq<- freqDataRef[f,fetchIndex]
+        plotData<- freqDataRef[1:size, fetchIndex]
+        plotDataUnique<- unique(plotData)
+        plotExpeted<- rep(-1, length(plotDataUnique))
+        for(f in 1:length(plotDataUnique)){
+#             N<- rowSumDataRef[f]
+            freq<- plotDataUnique[f]
             expect<- 0
             
             for( i in 1:NROW(readWeight)){
@@ -193,48 +238,51 @@ for( m in 1:which(!whichIsDirty) ) {
             # cp<- cumProb[index, fetchIndex]
             # expect <- cp
 
-    #         plotData[f, 2]<- expect
             plotExpeted[f]<- expect
         }
         
 
-        
-        # aaa<- vector(length=NROW(plotData))
-        # for(i in 1:NROW(plotData)){
-        #     index<- findInterval(plotData[i,1], ac[,1])
-        #     aaa[i]<- ac[index,2]
-        # }
-
-        plotCumData<- sapply(plotData[,1], function(x){
+        plotCumData<- sapply(plotDataUnique, function(x){
     #         index<- findInterval(x, dataCumsum[,1])
     #         if(index==0) index <- index + 1
     #         return(dataCumsum[index,2])
-            sum(plotData[,1]<= x)/length(plotData[,1])
-        })
-
-        dataCumsum<- cbind(sort(plotData[,1]), cumsum(sort(plotData[,1]))/sum(plotData[,1]) )
-        plotCumData2<- sapply(plotData[,1], function(x){
-            index<- findInterval(x, dataCumsum[,1])
-    #         if(index==0) index <- index + 1
-            return(dataCumsum[index,2])
+            sum(plotData<= x)/length(plotData)
         })
         
-    #     plotCumData3<- sapply(plotData[,1], function(x){
-    #         
-    #         sum(plotData[plotData[,1]<= x,1])  /  sum(plotData[,1])
-    #     })
-        # aa<- cumsum(tabulate(match(plotData[,1], plotData[,1])))/NROW(plotData)
-        # aa<- cumsum(sort(plotData[,1]))/sum(plotData[,1])
-        # plot(aa, sort(plotData[,2]), xlim=c(0,1), ylim=c(0,1)) 
-
-        plot(plotCumData, plotExpeted, xlim=c(0,1), ylim=c(0,1)) 
+        plot(plotExpeted, plotCumData, xlim=c(0,1), ylim=c(0,1), main=mains[fetchIndex], xlab="Expected cummulative frequency",ylab="Observed cummulative Frequency",) 
         abline(0,1)
-        # plot(plotData[,2], ( cumsum(plotData[,1])/sum(plotData[,1]) ),  xlim=c(0,1), ylim=c(0,1)) 
-    
+     
     }
+    outerText<- paste0("\nMixture of Dirichlet Multinomial ", header[m] ," \n")
+
+    mtext(outerText, side=3, outer=T, line=-2, cex=2)
     
+    
+}
+
+dev.off()
+embedFonts(qqplotFile, options="-DPDFSETTINGS=/prepress")
+} # match (p in 1:length(subNameList) ){
+
 ### testing
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+###############
 
 allX<-allCombN(2)
 allX<-allCombN(5)
@@ -516,15 +564,15 @@ collapseProb3Cat<- function(allX, prob){
         (collapseProbV2(allX, prob, 3)) )
 }
 
-collapseProb<- function(allX, prob, group){
-    max <- max(allX)
-    mProb<- vector(length= max+1)
-    for(i in 0:max){
-        mProb[i+1]<- sum(prob[allX[,group]==i])
-    }
-    result<- cbind(cumsum(mProb), seq(0,1,length=max+1) )
-    return(result)
-}
+# collapseProb<- function(allX, prob, group){
+#     max <- max(allX)
+#     mProb<- vector(length= max+1)
+#     for(i in 0:max){
+#         mProb[i+1]<- sum(prob[allX[,group]==i])
+#     }
+#     result<- cbind(cumsum(mProb), seq(0,1,length=max+1) )
+#     return(result)
+# }
 
 collapseProb<- function(allX, prob, group){
     max <- max(allX)
@@ -549,11 +597,11 @@ collapseProbV2<- function(allX, prob, group){
         sum(prob[allX[,group]==x])
     })
     
-    result<- cbind(cumsum(mProb), seq(0,1,length=max+1) )
+    result<- cbind((mProb), seq(0,1,length=max+1) )
     return(result)
 }
 
-
+    
 
 findCumProb<- function(freq, cumProb, fetchIndex){
     index<- findInterval(freq, cumProb[,4])

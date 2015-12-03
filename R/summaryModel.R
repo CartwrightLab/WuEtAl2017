@@ -1,3 +1,7 @@
+##TODO!! ADD likelihood of baised multinomial to the table
+##!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
 ##########################
 ### TODO:
 ### [x] Rerun EM for 1000 iterations
