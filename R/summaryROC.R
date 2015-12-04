@@ -1,4 +1,5 @@
 require(ROCR)
+require(OptimalCutpoints)
 source("/home/steven/Postdoc2/Project_MDM/MiDiMu/R/summaryFunctions.R")
 
 
@@ -119,8 +120,6 @@ for(m in whichDirtyIndex){
     par(new=T)
 }
 
-
-
 legend(0.7,0.5, legend=paste(header[whichDirtyIndex], legendAUC[whichDirtyIndex]), col=1:5, lwd=3, lty=1, title="Area under ROC curve")
 # paste("ROC curve", header[m], "AUC:",auc)
 
@@ -167,9 +166,119 @@ cat(sufix, file=fileAucTable, fill=T, append=T)
 # write.table(latexTableFull, file=file.path(fullPath, "latxTable"), quote=F, row.names=F)
     
 
+################################################################################
+##### Optimal cut for CEU2013 Chromosome 21
+################################################################################
+
+p<- 8
+subName<- subNameList[p]
+fullTitle<- fullTitleList[p]
+subFolders <- paste0(subName, "/original/base_count/")
+fullPath <- file.path(pwd, subFolders)
+
+# setwd(fullPath)
+maxModel<- extractMaxModel(fullPath)
+
+hets_byref<- list.files(path=fullPath, pattern="hets.+byref") 
+dataFull <- read.delim(paste(fullPath, hets_byref, sep=""), header=TRUE)
+# dataRef<- parseData(dataFull, lowerLimit, upperLimit, dirtyData)
+dataRefDirty<- parseData(dataFull, lowerLimit, upperLimit, dirtyData=TRUE, isCEU)
+
+fileMaxLikelihoodTabel <- file.path(fullPath, "maxLikelihoodTableFull.RData")
+if ( file.exists(fileMaxLikelihoodTabel) ){
+    load(fileMaxLikelihoodTabel)
+} else{
+    stop(paste0("File does not exist: ", fileMaxLikelihoodTabel))
+}
+
+#  refIndex<- (dataFull$pos %in% as.numeric( rownames(dataRef)) )
+# snpTfClean <- (dataFull$snp == 1 & dataFull$snpdif == 0)[refIndex]
+refDirtyIndex<- (dataFull$pos %in% as.numeric( rownames(dataRefDirty)) )
+snpTf <- (dataFull$snp == 1 & dataFull$snpdif == 0)[refDirtyIndex]
+
+whichIsDirty <- grepl("_[0-9]D",names(maxLikelihoodTable))
+header<- gsub("hets_CEU13" , "", names(maxLikelihoodTable) )
+header<- gsub("D", " components", header)
+header<- gsub("_", " ", header)
+
+
+m<-which(whichIsDirty)[2]
+legendAUC<- vector()
+
+maxIndex<- which.max(maxModel[[m]]$f)
+
+ml<- maxLikelihoodTable[[m]]
+classProp<- likelihoodToProportion(ml, maxModel[[m]]$f)
+pred<- prediction(classProp[,maxIndex], snpTf)
+
+# perfRoc <- performance(pred, "tpr", "fpr")
+# perfAuc <- performance(pred,"auc")
+# allAUC[p, m/2] <- perfAuc@y.values[[1]]
+# auc<- formatC(allAUC[p, m/2])
 
 
 
+# # # list all possible methods
+# listMethods<- c(
+# "MCT", "CB", 
+# "MaxSpSe", "MaxProdSpSe", 
+# "ROC01", 
+# "SpEqualSe", 
+# "Youden", "MaxEfficiency", "Minimax", 
+# "MaxDOR", "MaxKappa", "PROC01", 
+# "NPVEqualPPV", "MaxNPVPPV", 
+# "MaxSumNPVPPV", "MaxProdNPVPPV",
+# "MinPvalue", "PrevalenceMatching"
+# )
+
+        
+xx<- as.data.frame(cbind(prop=classProp[,maxIndex], snpTf=snpTf))
+listMethods<- c("CB", "ROC01", "Youden")
+
+oo<- optimal.cutpoints("prop", status="snpTf", tag.healthy=0, data=xx, method=listMethods)
+
+# par(mfrow=c(3,3),
+# plot(oo, which=1, ylim=c(0,1.1))
+# 
+# par(mfrow=c(3,3))
+# plot(oo, which=1:3)
+# ocSummary<- summary(oo)
+# ocSummary$p.table
+# ocSummary$p.table$Global$Youden[[1]][1:3]
+
+
+rocPlotFile<- file.path(latexDir, paste0("rocPlotsCutoff_", subName, ".pdf") )
+pdf(file=rocPlotFile, width=12, height=8, title=rocPlotFile)
+
+
+par(mgp=c(1.75, 0.6, 0), #mfrow=c(2,3), 
+    cex.main=1.2^3, cex.lab=1.2^2, oma=c(0,0,0,0) )
+
+plot(1 - m[["measures.acc"]][["Sp"]][, 1], m[["measures.acc"]][["Se"]][, 1], 
+    xlab = "1-Specificity", ylab = "Sensitivity", 
+    main = fullTitle, type = "l", cex.lab = 1.3, cex.axis = 1.3,
+    ylim=c(0,1.02) )
+# mtext(fullTitle, outer=T, cex=2, line=0)
+
+for(j in 1:length(listMethods)){
+m <- oo[[j]][[1]]
+cutoff <- m[["optimal.cutoff"]][["cutoff"]][[1]]
+sp <- m[["optimal.cutoff"]][["Sp"]][[1]]
+x<- 1 - m[["optimal.cutoff"]][["Sp"]][[1]]
+se <- m[["optimal.cutoff"]][["Se"]][[1]]
+y<- se
+
+points(x, y, pch = 16, cex = 1, col=j)
+legend.text <- paste(listMethods[j], " - Cutoff: ", round(cutoff, 3), "\n",
+        "Sensitivity: ", round(se, 3), "\n", 
+#         paste(rep(" ", nchar(listMethods[j])*2), collapse=""),
+        "Specificity: ", round(sp, 3), sep = "")
+legend(x, y, col=j, listMethods[j], bty = "n", xjust = 0.05, yjust = 0.5)
+legend(0.8, 1-0.2-0.15*j, pch=16, col=j, legend.text, bty = "n")
+}
+
+dev.off()
+embedFonts(rocPlotFile, options="-DPDFSETTINGS=/prepress")
 
 
 ################################################################################
@@ -212,4 +321,4 @@ all.equal(classProp, ll$p.row)
         # ll<-mdm.ll(dataRefDirty, m2$f, mdmAlphas(m2$params))
         # pred<- prediction(ll$p.row[,3], classicifation)
 
-
+        
