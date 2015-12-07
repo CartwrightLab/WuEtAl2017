@@ -216,8 +216,6 @@ pred<- prediction(classProp[,maxIndex], snpTf)
 # allAUC[p, m/2] <- perfAuc@y.values[[1]]
 # auc<- formatC(allAUC[p, m/2])
 
-
-
 # # # list all possible methods
 # listMethods<- c(
 # "MCT", "CB", 
@@ -230,6 +228,19 @@ pred<- prediction(classProp[,maxIndex], snpTf)
 # "MaxSumNPVPPV", "MaxProdNPVPPV",
 # "MinPvalue", "PrevalenceMatching"
 # )
+
+
+gatkFile<- paste(getwd(), "/GATK/", subName, "_GATK.vcf", sep="")
+gg<- read.table(gatkFile)
+ggList<- gg[,2]
+
+gatkIndex<- (dataFull$pos %in% ggList )
+gatkTf <- (dataFull$snp == 1 & dataFull$snpdif == 0)[gatkIndex]
+
+yy<- as.data.frame(cbind(prop=gatkTf, snpTf=snpTf))
+listMethods<- c("CB", "ROC01", "Youden")
+
+goo<- optimal.cutpoints("prop", status="snpTf", tag.healthy=0, data=yy, method=listMethods)
 
         
 xx<- as.data.frame(cbind(prop=classProp[,maxIndex], snpTf=snpTf))
@@ -245,6 +256,9 @@ oo<- optimal.cutpoints("prop", status="snpTf", tag.healthy=0, data=xx, method=li
 # ocSummary<- summary(oo)
 # ocSummary$p.table
 # ocSummary$p.table$Global$Youden[[1]][1:3]
+
+
+
 
 
 rocPlotFile<- file.path(latexDir, paste0("rocPlotsCutoff_", subName, ".pdf") )
@@ -276,6 +290,7 @@ legend.text <- paste(listMethods[j], " - Cutoff: ", round(cutoff, 3), "\n",
 legend(x, y, col=j, listMethods[j], bty = "n", xjust = 0.05, yjust = 0.5)
 legend(0.8, 1-0.2-0.15*j, pch=16, col=j, legend.text, bty = "n")
 }
+
 
 dev.off()
 embedFonts(rocPlotFile, options="-DPDFSETTINGS=/prepress")
