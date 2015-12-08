@@ -86,9 +86,9 @@ header<- gsub("_", " ", header)
 
 
 rocPlotFile<- file.path(latexDir, paste0("rocPlots_", subName, ".pdf") )
-pdf(file=rocPlotFile, width=12, height=8, title=rocPlotFile)
+pdf(file=rocPlotFile, width=8, height=8, title=rocPlotFile)
 par(mar=c(3,3,2,1), mgp=c(1.75, 0.6, 0), #mfrow=c(2,3), 
-    cex.main=1.2^3, cex.lab=1.2^2, oma=c(0,0,2.5,0) )
+    cex.main=1.75, cex.lab=1.4)#, oma=c(0,0,2.5,0) )
 
 # for( m in 3:length(maxLikelihoodTable)) {
 colIndex <- 1
@@ -120,10 +120,10 @@ for(m in whichDirtyIndex){
     par(new=T)
 }
 
-legend(0.7,0.5, legend=paste(header[whichDirtyIndex], legendAUC[whichDirtyIndex]), col=1:5, lwd=3, lty=1, title="Area under ROC curve")
+legend(0.6,0.5, legend=paste(header[whichDirtyIndex], legendAUC[whichDirtyIndex]), col=1:5, lwd=3, lty=1, title="Area under ROC curve")
 # paste("ROC curve", header[m], "AUC:",auc)
 
-mtext(fullTitle, outer=T, cex=2, line=0)
+mtext(fullTitle, outer=F, cex=1.75, line=0.25, font=par()$font.main)
 
 dev.off()
 embedFonts(rocPlotFile, options="-DPDFSETTINGS=/prepress")
@@ -137,9 +137,7 @@ embedFonts(rocPlotFile, options="-DPDFSETTINGS=/prepress")
 # header<- names(latexTable)
 # header<- gsub("hets_" , "", header)
 # header<- gsub("_" , "M", header)
-if(NCOL(allAUC) == 6){
-    allAUC <- allAUC[,2:6]
-}
+allAUCTable <- allAUC[,2:6]
 
 prefix<- paste0("\\begin{tabular}{|c|c|c|c|c|c|}
     \\hline \\multicolumn{6}{|c|}{Area under ROC curve}\\\\ \\hline
@@ -147,7 +145,7 @@ prefix<- paste0("\\begin{tabular}{|c|c|c|c|c|c|}
 
 sufix<- "\\end{tabular}"
 
-allAucString<- formatC(allAUC, format="f", digits=3)
+allAucString<- formatC(allAUCTable, format="f", digits=3)
 allAucLatex<- apply(allAucString,1,function(x){paste0(x, collapse=" & ")})
 
 if(isCEU){
@@ -170,7 +168,9 @@ cat(sufix, file=fileAucTable, fill=T, append=T)
 ##### Optimal cut for CEU2013 Chromosome 21
 ################################################################################
 
+BICIndexList<- c(2,2,2,2,2,2,2,3)*2 #TH
 p<- 8
+# for(p in 1:length(subNameList) ){
 subName<- subNameList[p]
 fullTitle<- fullTitleList[p]
 subFolders <- paste0(subName, "/original/base_count/")
@@ -201,8 +201,8 @@ header<- gsub("hets_CEU13" , "", names(maxLikelihoodTable) )
 header<- gsub("D", " components", header)
 header<- gsub("_", " ", header)
 
-
-m<-which(whichIsDirty)[2]
+# BICIndexList<- c(2,2,2,2,2,2,2,3)*2 #TH
+m<-BICIndexList[p]#which(whichIsDirty)[2]
 legendAUC<- vector()
 
 maxIndex<- which.max(maxModel[[m]]$f)
@@ -234,15 +234,19 @@ gatkFile<- paste(getwd(), "/GATK/", subName, "_GATK.vcf", sep="")
 gg<- read.table(gatkFile)
 ggList<- gg[,2]
 
-gatkIndex<- (dataFull$pos %in% ggList )
-gatkTf <- (dataFull$snp == 1 & dataFull$snpdif == 0)[gatkIndex]
+# refDirtyIndex<- (dataFull$pos %in% as.numeric( rownames(dataRefDirty)) )
+# snpTf <- (dataFull$snp == 1 & dataFull$snpdif == 0)[refDirtyIndex]
 
-yy<- as.data.frame(cbind(prop=gatkTf, snpTf=snpTf))
-listMethods<- c("CB", "ROC01", "Youden")
+refDirtyRow <- dataFull$pos[refDirtyIndex]
+gatkIndex<- ( refDirtyRow %in% ggList )
+# gatkTf <- (dataFull$snp == 1 & dataFull$snpdif == 0)[gatkIndex]
+gatkTf<- gatkIndex
 
-goo<- optimal.cutpoints("prop", status="snpTf", tag.healthy=0, data=yy, method=listMethods)
+gSen<- sum(gatkTf & snpTf)/ sum(snpTf)
+gSpec<- sum(gatkTf==F & snpTf==F)/ sum(snpTf==F)
+table(gatkTf, snpTf)
 
-        
+
 xx<- as.data.frame(cbind(prop=classProp[,maxIndex], snpTf=snpTf))
 listMethods<- c("CB", "ROC01", "Youden")
 
@@ -259,41 +263,48 @@ oo<- optimal.cutpoints("prop", status="snpTf", tag.healthy=0, data=xx, method=li
 
 
 
-
-
 rocPlotFile<- file.path(latexDir, paste0("rocPlotsCutoff_", subName, ".pdf") )
-pdf(file=rocPlotFile, width=12, height=8, title=rocPlotFile)
+pdf(file=rocPlotFile, width=8, height=8, title=rocPlotFile)
 
-
-par(mgp=c(1.75, 0.6, 0), #mfrow=c(2,3), 
-    cex.main=1.2^3, cex.lab=1.2^2, oma=c(0,0,0,0) )
-
+par(mar=c(3,3,2,1), mgp=c(1.75, 0.6, 0), #mfrow=c(2,3), 
+    cex.main=1.75, cex.lab=1.4)#, oma=c(0,0,2.5,0) )
+    
+m <- oo[[1]][[1]]
 plot(1 - m[["measures.acc"]][["Sp"]][, 1], m[["measures.acc"]][["Se"]][, 1], 
     xlab = "1-Specificity", ylab = "Sensitivity", 
-    main = fullTitle, type = "l", cex.lab = 1.3, cex.axis = 1.3,
+    main = fullTitle, type = "l",
     ylim=c(0,1.02) )
 # mtext(fullTitle, outer=T, cex=2, line=0)
 
 for(j in 1:length(listMethods)){
-m <- oo[[j]][[1]]
-cutoff <- m[["optimal.cutoff"]][["cutoff"]][[1]]
-sp <- m[["optimal.cutoff"]][["Sp"]][[1]]
-x<- 1 - m[["optimal.cutoff"]][["Sp"]][[1]]
-se <- m[["optimal.cutoff"]][["Se"]][[1]]
-y<- se
+    m <- oo[[j]][[1]]
+    cutoff <- m[["optimal.cutoff"]][["cutoff"]][[1]]
+    sp <- m[["optimal.cutoff"]][["Sp"]][[1]]
+    x<- 1 - m[["optimal.cutoff"]][["Sp"]][[1]]
+    se <- m[["optimal.cutoff"]][["Se"]][[1]]
+    y<- se
 
-points(x, y, pch = 16, cex = 1, col=j)
-legend.text <- paste(listMethods[j], " - Cutoff: ", round(cutoff, 3), "\n",
-        "Sensitivity: ", round(se, 3), "\n", 
-#         paste(rep(" ", nchar(listMethods[j])*2), collapse=""),
-        "Specificity: ", round(sp, 3), sep = "")
-legend(x, y, col=j, listMethods[j], bty = "n", xjust = 0.05, yjust = 0.5)
-legend(0.8, 1-0.2-0.15*j, pch=16, col=j, legend.text, bty = "n")
+    points(x, y, pch = 16, cex = 1, col=j)
+    legend.text <- paste(listMethods[j], " - Cutoff: ", round(cutoff, 3), "\n",
+            "Sensitivity: ", round(se, 3), "\n", 
+    #         paste(rep(" ", nchar(listMethods[j])*2), collapse=""),
+            "Specificity: ", round(sp, 3), sep = "")
+    legend(x, y, col=j, listMethods[j], bty = "n", xjust = 0.05, yjust = 0.5)
+    legend(0.6, 1-0.2-0.15*j, pch=16, col=j, legend.text, bty = "n")
 }
+j<- length(listMethods)+1
+points(1-gSpec, gSen, pch = 16, cex = 1, col=j)
+legend.text <- paste("GATK\n",
+        "Sensitivity: ", round(gSen, 3), "\n", 
+        "Specificity: ", round(gSpec, 3), sep = "")
+legend(1-gSpec, gSen, col=j, "GATK", bty = "n", xjust = 0.05, yjust = 0.5)
+legend(0.6, 1-0.2-0.15*j, pch=16, col=j, legend.text, bty = "n")
 
 
 dev.off()
 embedFonts(rocPlotFile, options="-DPDFSETTINGS=/prepress")
+
+#} ## end # for(p in 1:length(subNameList) ){
 
 
 ################################################################################

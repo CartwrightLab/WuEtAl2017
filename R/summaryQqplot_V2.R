@@ -52,8 +52,8 @@ collapseSortMean<- function(data, ncol){
 plotNamePrefix<- "qqPlotsV2_"
 numRep<- 100
 
-p<- 8
 p<- 1
+p<- 8
 # for (p in 2:4){
 # for(p in 1:length(subNameList) ){
 
