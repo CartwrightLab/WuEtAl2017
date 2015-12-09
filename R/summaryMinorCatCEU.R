@@ -1,31 +1,16 @@
-##########################
-### TODO:
-### [x] Rerun EM for 1000 iterations
-### [x] Try a different chromosome, or a section
-### Re-estimate categories after divided into good/bad sites.
-###		Hopefully bad sites are at minor categories
-### 
-### Almost done, just need to clean up. Get estimate for all sites (from 4 datasets) 
-###
-##########################
+scriptname <- sub("^--file=",'',grep("^--file=",commandArgs(),value=TRUE)[1])
+cat(length(scriptname))
+if(is.na(scriptname)){
+    isRscriptMode<- FALSE
+} else {
+    isRscriptMode<- TRUE
+}
 
-# pid <- Sys.getpid()
-# args <- commandArgs(trailingOnly=TRUE)
 
-# nn <- as.numeric(args[1])
-# k <- args[2]
-# dirtyData <- grepl("^\\d+[Dd]$",k)
-# if(dirtyData) {
-# 	k <- as.numeric(sub("[Dd]$","",k))
-# } else {
 #suppressPackageStartupMessages(
-source("/home/steven/Postdoc2/Project_MDM/MiDiMu/R/summaryFunctions.R")
+source("./summaryFunctions.R")
 
-# source("/home/steven/Postdoc2/Project_MDM/MiDiMu/R/mdm.R")
-
-isCEU <- FALSE
 isCEU <- TRUE
-
 dirtyData <- FALSE
 upperLimit <- 150
 lowerLimit <- 10
@@ -174,7 +159,7 @@ mlMaxIndex<- apply(maxLikelihoodTable[[BICIndex]], 1, which.max)
 maxComp<- which.max(table(mlMaxIndex))
 predIndex<- (mlMaxIndex==maxComp)
 
-table(predIndex)
+# table(predIndex)
 
 trueHetPos<- as.numeric(rownames(dataRef))
 potenHetPos<- as.numeric(rownames(dataRefDirty))
@@ -190,10 +175,10 @@ majorTF<- sapply(predMajorPos, function(x){
         return(FALSE)
     })
     
-summary(majorTF)
+# summary(majorTF)
 majorCount_T<- sum(majorTF)
 majorCount_F<- sum(!majorTF)
-cat(table(majorTF), formatC(majorCount_T/length(majorTF)), "\n")
+# cat(table(majorTF), formatC(majorCount_T/length(majorTF)), "\n")
 
 predMajorResult<- table(predMajorPos %in% trueHetPos)
 
@@ -218,10 +203,10 @@ minorTF<- sapply(predMinorPos, function(x){
         })
 
 
-table(minorTF)
+# table(minorTF)
 MinorCount_T<- sum(minorTF)
 MinorCount_F<- sum(!minorTF)
-cat(table(minorTF), formatC(MinorCount_T/length(minorTF)), "\n")
+# cat(table(minorTF), formatC(MinorCount_T/length(minorTF)), "\n")
 
 
 combinedCnvCount<- matrix(c(table(majorTF), table(minorTF)), nrow=2, byrow=T)
@@ -230,14 +215,14 @@ r<- fisher.test(combinedCnvCount)
 
 cat(paste0(fullTitle, " "), " & ",
     paste(predMajorResult, " & ", collapse=""), 
-    formatC(predMajorResult[1]/sum(predMajorResult)), " & ",
-    paste(majorCount_F,  majorCount_T, formatC(majorCount_T/length(majorTF)), sep=" & "),
-    " & " ,formatC(r$p.value), "\\\\ " , file=cnvResultFileName, append=TRUE, fill=TRUE)
+    formatC(predMajorResult[1]/sum(predMajorResult), digits=3), " & ",
+    paste(majorCount_F,  majorCount_T, formatC(majorCount_T/length(majorTF), digits=3), sep=" & "),
+    " & " ,formatC(r$p.value, digits=3), "\\\\ " , file=cnvResultFileName, append=TRUE, fill=TRUE)
 
     
 cat( " & ",
-    paste(predResult, " & ", collapse=""), formatC(predResult[1]/sum(predResult)), " & ",
-    paste(MinorCount_F,  MinorCount_T, formatC(MinorCount_T/length(minorTF)), sep=" & "),
+    paste(predResult, " & ", collapse=""), formatC(predResult[1]/sum(predResult), digits=3), " & ",
+    paste(MinorCount_F,  MinorCount_T, formatC(MinorCount_T/length(minorTF), digits=3), sep=" & "),
     " & \\\\ \\hline" , file=cnvResultFileName, append=TRUE, fill=TRUE)
 
 

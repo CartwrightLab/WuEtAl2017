@@ -214,12 +214,12 @@ r<- fisher.test(combinedCnvCount)
 
 
 cat(paste0(fullTitle, " & FH"), " & ",
-    paste(cnvCount_F,  cnvCount_T, formatC(cnvCount_T/length(cnvTF)), sep=" & "),
-    " & " ,formatC(r$p.value), " \\\\ " , file=cnvResultFileName, append=TRUE, fill=TRUE)
+    paste(cnvCount_F,  cnvCount_T, formatC(cnvCount_T/length(cnvTF), digits=3), sep=" & "),
+    " & " ,formatC(r$p.value, digits=3), " \\\\ " , file=cnvResultFileName, append=TRUE, fill=TRUE)
 
 
 cat(paste0("" , " & TH"), " & ",
-    paste(count_F,  count_T, formatC(count_T/length(allTF)), sep=" & "),
+    paste(count_F,  count_T, formatC(count_T/length(allTF), digits=3), sep=" & "),
     " & \\\\ \\hline" , file=cnvResultFileName, append=TRUE, fill=TRUE)
 # unique( cbind( rep(1:2, 60), rep(1:5, 24)) )
 
@@ -233,86 +233,54 @@ cat(sufix, file=cnvResultFileName, fill=T, append=T)
 ################################################################################
 ################################################################################
 
-dl<- vector(lengtth(true
-
-dl<- sapply(trueHetName, function(x){
-        which(x >= uniqueCnvRegion[,1] & x <= uniqueCnvRegion[,2]  )
-#         if( any((x >= uniqueCnvRegion[,1] & x <= uniqueCnvRegion[,2]  ))  ){
-#             return(TRUE)
-#         }
-#         return(FALSE)
-    })
-
-dl2<- sapply(dl, function(x){
-    dd[x]
-})
-
-
-dl_type<- sapply(dl, function(x){
-    return(list(cnvChromosome[x,6]))
-})
-a=sapply(dl_type,summary)
-apply(a,1,sum)
-
-
-dlx<- sapply(dl2, function(x){
-    sum(x>10000)/length(x)
-})
-
-
-
-
-
-##
-##
-site<- list()
-for(p in 1:length(subNameList) ){
-
-subName<- subNameList[p]
-fullTitle<- fullTitleList[p]
-subFolders <- paste0(subName, "/original/base_count/")
-fullPath <- file.path(pwd, subFolders)
-chromosomeIndex<- gsub(".*_C([0-9]+)", "\\1", subName)
-setwd(fullPath)
-
-hets_byref<- list.files(path=fullPath, pattern="hets.+byref") 
-dataFull <- read.delim(paste(fullPath, hets_byref, sep=""), header=TRUE)
-dataRef<- parseData(dataFull, lowerLimit, upperLimit, dirtyData)
-dataRefDirty<- parseData(dataFull, lowerLimit, upperLimit, dirtyData=TRUE)
-
-
-trueHetName<- as.numeric(rownames(dataRef))
-potHetName<- as.numeric(rownames(dataRefDirty))
-falsePosIndex <- which(! potHetName %in% trueHetName)
-
-
-
-siteData<- as.data.frame(matrix(nrow=NROW(dataRefDirty), ncol=2))
-colnames(siteData)<- c("site", "True/Potential_Het")
-siteData[,1]<- potHetName
-siteData[,2]<- "T"
-siteData[falsePosIndex,2]<- "P"
-site[[chromosomeIndex]]<- rbind(site[[chromosomeIndex]], siteData)
-# write.table(siteData, file=paste0(pwd,"siteData_",subName), row.names=F)
-
-}
-
-
-dim(unique(site[["21"]]))
-dim((site[["21"]]))
-
-dim(unique(site[["10"]]))
-dim((site[["10"]]))
-
-
-a<-order(unique(site[["10"]])[,1])
-site[["10Sort"]] <- unique(site[["10"]])[a,]
-write.table(site[["10Sort"]], file=paste0(pwd,"CEU_SiteData_Chromosome10"), row.names=F)
-
-a<-order(unique(site[["21"]])[,1])
-site[["21Sort"]] <- unique(site[["21"]])[a,]
-write.table(site[["21Sort"]], file=paste0(pwd,"CEU_SiteData_Chromosome21"), row.names=F)
-
-
-
+# site<- list()
+# for(p in 1:length(subNameList) ){
+# 
+# subName<- subNameList[p]
+# fullTitle<- fullTitleList[p]
+# subFolders <- paste0(subName, "/original/base_count/")
+# fullPath <- file.path(pwd, subFolders)
+# chromosomeIndex<- gsub(".*_C([0-9]+)", "\\1", subName)
+# setwd(fullPath)
+# 
+# hets_byref<- list.files(path=fullPath, pattern="hets.+byref") 
+# dataFull <- read.delim(paste(fullPath, hets_byref, sep=""), header=TRUE)
+# dataRef<- parseData(dataFull, lowerLimit, upperLimit, dirtyData)
+# dataRefDirty<- parseData(dataFull, lowerLimit, upperLimit, dirtyData=TRUE)
+# 
+# 
+# trueHetName<- as.numeric(rownames(dataRef))
+# potHetName<- as.numeric(rownames(dataRefDirty))
+# falsePosIndex <- which(! potHetName %in% trueHetName)
+# 
+# 
+# 
+# siteData<- as.data.frame(matrix(nrow=NROW(dataRefDirty), ncol=2))
+# colnames(siteData)<- c("site", "True/Potential_Het")
+# siteData[,1]<- potHetName
+# siteData[,2]<- "T"
+# siteData[falsePosIndex,2]<- "P"
+# site[[chromosomeIndex]]<- rbind(site[[chromosomeIndex]], siteData)
+# # write.table(siteData, file=paste0(pwd,"siteData_",subName), row.names=F)
+# 
+# }
+# 
+# 
+# dim(unique(site[["21"]]))
+# dim((site[["21"]]))
+# 
+# dim(unique(site[["10"]]))
+# dim((site[["10"]]))
+# 
+# 
+# a<-order(unique(site[["10"]])[,1])
+# site[["10Sort"]] <- unique(site[["10"]])[a,]
+# write.table(site[["10Sort"]], file=paste0(pwd,"CEU_SiteData_Chromosome10"), row.names=F)
+# 
+# a<-order(unique(site[["21"]])[,1])
+# site[["21Sort"]] <- unique(site[["21"]])[a,]
+# write.table(site[["21Sort"]], file=paste0(pwd,"CEU_SiteData_Chromosome21"), row.names=F)
+# 
+# 
+# 
 
