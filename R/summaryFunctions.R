@@ -211,6 +211,7 @@ plotqq<- function(z, ff, outerText, xlim=c(0,1),ylim=c(0,1)){
         mains = c("Reference Allele", "Alternate Allele", "Error")
     } else {
         mains = c("Reference Allele", "Error")
+#         z[,1], ff[,1]
     }
 
     for(i in 1:numCat) {
@@ -223,10 +224,21 @@ plotqq<- function(z, ff, outerText, xlim=c(0,1),ylim=c(0,1)){
             legend(0.1, 1, paste0("Proportion of sites at (1,1)= ", formatC(count11)) )
         }
     }
-    mtext(outerText, side=3, outer=T, line=-2, cex=2)
+    mtext(outerText, side=3, outer=T, line=0.5, cex=2)
 
 }
 
+
+collapseSortMean<- function(data, ncol){
+    result<- apply(data, 2, function(x){
+        xm<- matrix(x, ncol=ncol)
+        xmSort<- apply(xm, 2, function(y){ sort(y) } )
+        xmMean<- apply(xmSort, 1, function(y){ mean(y) } )
+        return(xmMean)
+
+    })
+    return(result)
+}
 
 
 ######################################################################

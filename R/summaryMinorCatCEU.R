@@ -16,10 +16,14 @@ upperLimit <- 150
 lowerLimit <- 10
 loadData<- TRUE
 
+dataDir<- "../data/"
+latexTableDir<- "../tables/"
+figureDir<- "../figures/"
+cnvDir <- file.path(dataDir,"CNV")
 
 latexDir<- "/home/steven/Postdoc2/Project_MDM/DiriMulti/"
+latexDir<- latexTableDir
 
-cnvDir <- "/home/steven/Postdoc2/Project_MDM/CNV/"
 
 if(isCEU){
     pwd <- "/home/steven/Postdoc2/Project_MDM/CEU/"
@@ -54,7 +58,7 @@ if(isCEU){
     )
     projectName<- "CHM1"
 }
-setwd(pwd)
+# setwd(pwd)
 
 
 p<- 8
@@ -67,7 +71,7 @@ BICIndexList<- c(2,2,2,2,2,2,2,3)*2 #TH
     
 cnvFile1<- read.table(paste0(cnvDir, "Mills_deletions.csv"), sep=",", header=T)
 cnvFile1<-cnvFile1[cnvFile1[,1]=="NA12878",]
-cnvFile2<- read.table(paste0(cnvDir, "Mills_deletionsInsertions.csv"), sep=",", header=T)    
+cnvFile2<- read.table(file.path(cnvDir, "Mills_deletionsInsertions.csv"), sep=",", header=T)    
 cnvFile2<-cnvFile2[cnvFile2[,1]=="NA12878",]
 
 

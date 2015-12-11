@@ -40,6 +40,7 @@ if(isCEU){
 }
 setwd(pwd)
 
+BICIndexList<- c(2,2,2,2,2,2,2,3)*2 #TH
 
 likelihoodToProportion<- function(ml, p){
     eml<- t(t(exp(ml))*p)
@@ -49,7 +50,7 @@ likelihoodToProportion<- function(ml, p){
 
 
 allAUC<- matrix(nrow=length(subNameList), ncol=6)
-
+# allAUC<- NULL
 p<- 8
 # for(p in 1:length(subNameList) ){
 
@@ -79,7 +80,7 @@ refDirtyIndex<- (dataFull$pos %in% as.numeric( rownames(dataRefDirty)) )
 snpTf <- (dataFull$snp == 1 & dataFull$snpdif == 0)[refDirtyIndex]
 
 whichIsDirty <- grepl("_[0-9]D",names(maxLikelihoodTable))
-header<- gsub("hets_CEU13" , "", names(maxLikelihoodTable) )
+header<- gsub("hets_CEU1." , "", names(maxLikelihoodTable) )
 header<- gsub("D", " components", header)
 header<- gsub("_", " ", header)
 
@@ -165,12 +166,17 @@ cat(sufix, file=fileAucTable, fill=T, append=T)
     
 
 ################################################################################
-##### Optimal cut for CEU2013 Chromosome 21
+##### Optimal cut 
 ################################################################################
+listMethods<- c("CB", "ROC01", "Youden")
 
-BICIndexList<- c(2,2,2,2,2,2,2,3)*2 #TH
+allSenSpec<- matrix(nrow=length(subNameList), ncol=2*(length(listMethods)+1), 
+    dimnames=list(subNameList, paste(rep(c(listMethods, "GATK"), each=2), c("Sen", "Spe"), sep="_") ))
+allGatkAuc<- vector(length=length(subNameList) )
+
 p<- 8
-# for(p in 1:length(subNameList) ){
+for(p in 1:length(subNameList) ){
+
 subName<- subNameList[p]
 fullTitle<- fullTitleList[p]
 subFolders <- paste0(subName, "/original/base_count/")
@@ -197,12 +203,12 @@ refDirtyIndex<- (dataFull$pos %in% as.numeric( rownames(dataRefDirty)) )
 snpTf <- (dataFull$snp == 1 & dataFull$snpdif == 0)[refDirtyIndex]
 
 whichIsDirty <- grepl("_[0-9]D",names(maxLikelihoodTable))
-header<- gsub("hets_CEU13" , "", names(maxLikelihoodTable) )
-header<- gsub("D", " components", header)
-header<- gsub("_", " ", header)
+# header<- gsub("hets_CEU1." , "", names(maxLikelihoodTable) )
+# header<- gsub("D", " components", header)
+# header<- gsub("_", " ", header)
 
-# BICIndexList<- c(2,2,2,2,2,2,2,3)*2 #TH
-m<-BICIndexList[p]#which(whichIsDirty)[2]
+
+m<-BICIndexList[p] #which(whichIsDirty)[2]
 legendAUC<- vector()
 
 maxIndex<- which.max(maxModel[[m]]$f)
@@ -230,26 +236,49 @@ pred<- prediction(classProp[,maxIndex], snpTf)
 # )
 
 
-gatkFile<- paste(getwd(), "/GATK/", subName, "_GATK.vcf", sep="")
+## GATK ROC
+gatkFile<- paste(getwd(), "/GATK/", subName, "_GATK.vcf_0", sep="")
 gg<- read.table(gatkFile)
 ggList<- gg[,2]
 
-# refDirtyIndex<- (dataFull$pos %in% as.numeric( rownames(dataRefDirty)) )
-# snpTf <- (dataFull$snp == 1 & dataFull$snpdif == 0)[refDirtyIndex]
+refDirtyRow <- dataFull$pos[refDirtyIndex]
+gatkToDirtyIndex<- ( refDirtyRow %in% ggList )
+gatkKeepIndex<- ( ggList %in% refDirtyRow  )
+
+gProb<- rep(0, length(refDirtyRow))
+gProb[gatkToDirtyIndex]<- gg[gatkKeepIndex,6]
+
+## check matching
+tt<- rep(0, length(refDirtyRow))
+tt[gatkToDirtyIndex]<- gg[gatkKeepIndex,2]
+aa <- cbind(refDirtyRow, tt )
+if(! all(  unlist(apply(aa,1, function(x){if(x[2]!=0) diff(x)})) ==0 ) ){
+    warning("Row ID not match!! Check matching!")
+}
+
+gPred<- prediction(gProb, snpTf)
+gPerfRoc<- performance(gPred, "tpr", "fpr")
+gPerfAuc<- performance(gPred, "auc")
+gatkAuc<- gPerfAuc@y.values[[1]]
+allGatkAuc[p]<- gatkAuc
+# plot(gPerfRoc)
+# lines(gPerfRoc@x.values[[1]], gPerfRoc@y.values[[1]], col=2)
+
+##Default GATK sen/spe
+gatkFile30<- paste(getwd(), "/GATK/", subName, "_GATK.vcf", sep="")   
+gg<- read.table(gatkFile)
+ggList<- gg[,2]
 
 refDirtyRow <- dataFull$pos[refDirtyIndex]
-gatkIndex<- ( refDirtyRow %in% ggList )
-# gatkTf <- (dataFull$snp == 1 & dataFull$snpdif == 0)[gatkIndex]
-gatkTf<- gatkIndex
+gatkToDirtyIndex<- ( refDirtyRow %in% ggList )
 
+gatkTf<- gatkToDirtyIndex
 gSen<- sum(gatkTf & snpTf)/ sum(snpTf)
 gSpec<- sum(gatkTf==F & snpTf==F)/ sum(snpTf==F)
 table(gatkTf, snpTf)
 
-
+## Optimal cutoff
 xx<- as.data.frame(cbind(prop=classProp[,maxIndex], snpTf=snpTf))
-listMethods<- c("CB", "ROC01", "Youden")
-
 oo<- optimal.cutpoints("prop", status="snpTf", tag.healthy=0, data=xx, method=listMethods)
 
 # par(mfrow=c(3,3),
@@ -260,7 +289,6 @@ oo<- optimal.cutpoints("prop", status="snpTf", tag.healthy=0, data=xx, method=li
 # ocSummary<- summary(oo)
 # ocSummary$p.table
 # ocSummary$p.table$Global$Youden[[1]][1:3]
-
 
 
 rocPlotFile<- file.path(latexDir, paste0("rocPlotsCutoff_", subName, ".pdf") )
@@ -275,29 +303,42 @@ plot(1 - m[["measures.acc"]][["Sp"]][, 1], m[["measures.acc"]][["Se"]][, 1],
     main = fullTitle, type = "l",
     ylim=c(0,1.02) )
 # mtext(fullTitle, outer=T, cex=2, line=0)
+legend.text <- paste("AUC: ", formatC(m[["measures.acc"]][["AUC"]][1]) )
+legend(0.6, 1-0.3, legend.text, bty = "n")
 
 for(j in 1:length(listMethods)){
     m <- oo[[j]][[1]]
     cutoff <- m[["optimal.cutoff"]][["cutoff"]][[1]]
     sp <- m[["optimal.cutoff"]][["Sp"]][[1]]
-    x<- 1 - m[["optimal.cutoff"]][["Sp"]][[1]]
-    se <- m[["optimal.cutoff"]][["Se"]][[1]]
-    y<- se
-
+    x<- 1 - sp
+    
+    se<- m[["optimal.cutoff"]][["Se"]][[1]]
+    y <- se
+    
+    allSenSpec[p,j*2-1]<- se
+    allSenSpec[p,j*2]<- sp
     points(x, y, pch = 16, cex = 1, col=j)
-    legend.text <- paste(listMethods[j], " - Cutoff: ", round(cutoff, 3), "\n",
-            "Sensitivity: ", round(se, 3), "\n", 
+    legend.text <- paste(listMethods[j], " - Cutoff: ", formatC(cutoff), "\n",
+            "Sensitivity: ", formatC(se), "\n", 
     #         paste(rep(" ", nchar(listMethods[j])*2), collapse=""),
-            "Specificity: ", round(sp, 3), sep = "")
+            "Specificity: ", formatC(sp), sep = "")
     legend(x, y, col=j, listMethods[j], bty = "n", xjust = 0.05, yjust = 0.5)
     legend(0.6, 1-0.2-0.15*j, pch=16, col=j, legend.text, bty = "n")
 }
-j<- length(listMethods)+1
-points(1-gSpec, gSen, pch = 16, cex = 1, col=j)
+## Defalut GATK
 legend.text <- paste("GATK\n",
-        "Sensitivity: ", round(gSen, 3), "\n", 
-        "Specificity: ", round(gSpec, 3), sep = "")
+        "Sensitivity: ", formatC(gSen), "\n", 
+        "Specificity: ", formatC(gSpec), "\n",
+        "AUC: ", formatC(gatkAuc), sep = "")
+
+j<- length(listMethods)+1
+allSenSpec[p,j*2-1]<- gSen
+allSenSpec[p,j*2]<- gSpec
+points(1-gSpec, gSen, pch = 16, cex = 1, col=j)
 legend(1-gSpec, gSen, col=j, "GATK", bty = "n", xjust = 0.05, yjust = 0.5)
+
+## GATK ROC
+lines(gPerfRoc@x.values[[1]], gPerfRoc@y.values[[1]], col=j)
 legend(0.6, 1-0.2-0.15*j, pch=16, col=j, legend.text, bty = "n")
 
 
@@ -306,45 +347,90 @@ embedFonts(rocPlotFile, options="-DPDFSETTINGS=/prepress")
 
 #} ## end # for(p in 1:length(subNameList) ){
 
-
 ################################################################################
-##### make sure the methods are the same
+##### GATK curve
 ################################################################################
-require("ROCR")
 
-m2<- maxModel[[6]]
-x<- dataRefDirty
-source("/home/steven/Postdoc2/Project_MDM/RachelCode/dm.R")
-ll<-mdm.ll(x,m2$f, mdmAlphas(m2$params))
 
-#
-ml<- maxLikelihoodTable[[6]]
-pp<- m2$f
-#
-pr<- ml
-p<- pp
-prm <- apply(pr,1,max)
-prm <- 0
-pr <- pr-prm
-pr <- t(t(exp(pr))*p)
-rs <- rowSums(pr)
-rss <- log(rs)+prm
-all.equal(sum(rss), ll$ll)
-all.equal(rss, ll$ll.row)
-all.equal(pr/rs, ll$p.row)
-
-# eml<- t(apply(ml,1,function(x){ exp(x)*p }))
-eml<- t(t(exp(ml))*p)
-peml<- eml/rowSums(eml)
-all.equal(peml, ll$p.row)
-
-classProp<- likelihoodToProportion(ml, p)
-all.equal(classProp, ll$p.row)
-
-#     ll<-mdm.ll(dataRefDirty, m2$f, mdmAlphas(m2$params))
-#     pred<- prediction(ll$p.row[,3], classicifation)
-#     pred<- prediction(peml[,3], snpTf)
-        # ll<-mdm.ll(dataRefDirty, m2$f, mdmAlphas(m2$params))
-        # pred<- prediction(ll$p.row[,3], classicifation)
+# 
+# 
+# ################################################################################
+# ##### make sure the methods are the same
+# ################################################################################
+# require("ROCR")
+# 
+# m2<- maxModel[[6]]
+# x<- dataRefDirty
+# source("/home/steven/Postdoc2/Project_MDM/RachelCode/dm.R")
+# ll<-mdm.ll(x,m2$f, mdmAlphas(m2$params))
+# 
+# #
+# ml<- maxLikelihoodTable[[6]]
+# pp<- m2$f
+# #
+# pr<- ml
+# p<- pp
+# prm <- apply(pr,1,max)
+# prm <- 0
+# pr <- pr-prm
+# pr <- t(t(exp(pr))*p)
+# rs <- rowSums(pr)
+# rss <- log(rs)+prm
+# all.equal(sum(rss), ll$ll)
+# all.equal(rss, ll$ll.row)
+# all.equal(pr/rs, ll$p.row)
+# 
+# # eml<- t(apply(ml,1,function(x){ exp(x)*p }))
+# eml<- t(t(exp(ml))*p)
+# peml<- eml/rowSums(eml)
+# all.equal(peml, ll$p.row)
+# 
+# classProp<- likelihoodToProportion(ml, p)
+# all.equal(classProp, ll$p.row)
+# 
+# #     ll<-mdm.ll(dataRefDirty, m2$f, mdmAlphas(m2$params))
+# #     pred<- prediction(ll$p.row[,3], classicifation)
+# #     pred<- prediction(peml[,3], snpTf)
+#         # ll<-mdm.ll(dataRefDirty, m2$f, mdmAlphas(m2$params))
+#         # pred<- prediction(ll$p.row[,3], classicifation)
 
         
+#############################################################
+##### MS Table
+#############################################################
+
+# save(allSenSpec, file="tempAllSpeSpec.RData")
+# save(allAUC, file="tempAllAuc.RData")
+
+
+# \\hline \\multicolumn{6}{|c|}{Area under ROC curve}\\\\ \\hline
+prefix<- paste0("\\begin{tabular}{|c|cc|cc|cc|cc|cc|}
+    \\hline
+    Dataset & AUC & GATK AUC & CB Sen & CB Spe & ROC01 Sen & ROC01 Spe & Youden Sen & Youden Spe & GATK Sen & GATK Spe
+    \\\\ \\hline")
+
+sufix<- "\\hline \\end{tabular}"
+
+# allAucString<- formatC(allAUCTable, format="f", digits=3)
+# allAucLatex<- apply(allAucString,1,function(x){paste0(x, collapse=" & ")})
+
+if(isCEU){
+    fileAucTable<- file.path(latexDir, paste0("AUC_summary_MS.tex") )
+} else{
+#     fileAucTable<- file.path(latexDir, paste0("AUC_summary_CHM1.tex") )
+}
+
+dataName<- gsub("_C", " Chr", subNameList)
+cat(prefix, file=fileAucTable, fill=T)
+for(i in length(subNameList):1 ){
+    temp<- paste(dataName[i], formatC(allAUC[i,BICIndexList[i]/2]), formatC(allGatkAuc[i]),
+    paste(formatC(allSenSpec[i,]), collapse=" & ")
+    ,sep=" & ")
+    temp<- paste(temp, "\\\\")
+    
+#     temp<- paste0(dataName[i], " & ", allAucLatex[i], " \\\\ \\hline")
+    cat(temp, file=fileAucTable, fill=T, append=T)
+}
+cat(sufix, file=fileAucTable, fill=T, append=T)
+# write.table(latexTableFull, file=file.path(fullPath, "latxTable"), quote=F, row.names=F)
+    

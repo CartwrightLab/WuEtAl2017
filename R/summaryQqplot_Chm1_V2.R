@@ -4,7 +4,7 @@ source("/home/steven/Postdoc2/Project_MDM/MiDiMu/R/summaryFunctions.R")
 isCEU <- FALSE
 # isCEU <- TRUE
 
-
+loadData <- TRUE
 dirtyData <- FALSE
 upperLimit <- 150
 lowerLimit <- 10
@@ -39,26 +39,13 @@ latexDir<- "/home/steven/Postdoc2/Project_MDM/DiriMulti/"
 setwd(pwd)
 
 
-collapseSortMean<- function(data, ncol){
-    result<- apply(data, 2, function(x){
-        xm<- matrix(x, ncol=ncol)
-        xmSort<- apply(xm, 2, function(y){ sort(y) } )
-        xmMean<- apply(xmSort, 1, function(y){ mean(y) } )
-        return(xmMean)
-
-    })
-    return(result)
-}
-
 
 plotNamePrefix<- "qqPlotsV2_"
 numRep<- 100
 
 
-p<- 2
-p<- 1
 
-# for(p in 1:length(subNameList) ){
+for(p in 1:length(subNameList) ){
 
 subName<- subNameList[p]
 fullTitle<- fullTitleList[p]
@@ -110,50 +97,100 @@ par(mai=c(0.8,0.8,0.2,0.1), mfrow=c(1,2),
 
 
 ## simple multinomial (no bias)
-prob <- colSumDataRef /sum(colSumDataRef)
-ll <- sum(log(prob)*colSumDataRef)
-# cat(sprintf("  ll = %0.16g\n", ll));#print(prob)
-
-b <- rmultinomial(length(rowSumDataRef)*numRep, rep(rowSumDataRef, numRep), prob)
-b2 <- b/rowSums(b)
-expFreq<- collapseSortMean(b2, numRep)
-
-plotqq(expFreq, freqDataRef, paste0("\nMultinomial ", subName2, "\n") )
+plotName<- "Multinomial"
+fileExpectedFreq <- paste0(getwd(), "/", subName, "_", gsub(" ", "_", plotName), "_expectedFreq.RData")
 
 
- 
-# ## multinomial (with ref bias)
-# prob <- colSumDataRef / sum(colSumDataRef)
-# ll <- sum(log(prob)* colSumDataRef)
-# # cat(sprintf("  ll = %0.16g\n", ll));#print(prob)
-# b <- rmultinomial(length(rowSumDataRef)*numRep, rep(rowSumDataRef, numRep), prob)
-# b2 <- b/rowSums(b)
-# expFreq<- collapseSortMean(b2, numRep)
-# plotqq(expFreq, freqDataRef, paste0("\nBiased Multinomial ", subName2, " \n"))
+if ( file.exists(fileExpectedFreq) && loadData ){
+    load(fileExpectedFreq)
+} else{
+    prob <- colSumDataRef /sum(colSumDataRef)
+    ll <- sum(log(prob)*colSumDataRef)
+    # cat(sprintf("  ll = %0.16g\n", ll));#print(prob)
+
+    b <- rmultinomial(length(rowSumDataRef)*numRep, rep(rowSumDataRef, numRep), prob)
+    b2 <- b/rowSums(b)
+    expFreq<- collapseSortMean(b2, numRep)
+    save(expFreq, file=fileExpectedFreq)
+}
+plotqq(expFreq, freqDataRef, paste0(plotName, " ", subName2) )
+
 
 ## dirichlet-multinomial mixture
 for( m in which(whichIsP) ) {
 
-    main<- paste0("\nMixture of Dirichlet Multinomial ", header[m] ," \n")
-#     cat("Plotting ", main)
-    mModel<- maxModel[[m]]
-    
-    b <- rmdm(numRep*length(rowSumDataRef), rep(rowSumDataRef, numRep), mModel$f,
-                    phi=mModel$params[,1], p=mModel$params[,c(2,4)])
-    b2 <- b/rowSums(b)
-    expFreq<- collapseSortMean(b2, numRep)
-    
-    main<- paste0("\nMixture of Dirichlet Multinomial ", header[m] ," \n")
+    plotName<- paste0("Mixture of Dirichlet Multinomial ", header[m])
     if(m==3){
-        main<- gsub(" 1 components", "", main)
-        main<- gsub("Mixture of ", "", main)
+        plotName<- gsub(" 1 components", "", plotName)
+        plotName<- gsub("Mixture of ", "", plotName)
     }
-    
+    fileExpectedFreq <- paste0(getwd(), "/", subName, "_", gsub(" ", "_", plotName), "_expectedFreq.RData")
+    if ( file.exists(fileExpectedFreq) && loadData ){
+        load(fileExpectedFreq)
+    } else{
+        mModel<- maxModel[[m]]
+        
+        b <- rmdm(numRep*length(rowSumDataRef), rep(rowSumDataRef, numRep), mModel$f,
+                        phi=mModel$params[,1], p=mModel$params[,c(2,4)])
+        b2 <- b/rowSums(b)
+        expFreq<- collapseSortMean(b2, numRep)
+        save(expFreq, file=fileExpectedFreq)
+    }
+    main<- plotName
     plotqq(expFreq, freqDataRef, main)
 }
 
 
 dev.off()
 embedFonts(qqplotFile, options="-DPDFSETTINGS=/prepress")
-# } # match (p in 1:length(subNameList) ){
+} # match (p in 1:length(subNameList) ){
+
+
+
+
+
+####################################################################
+##### Plot MS
+####################################################################
+
+qqplotFile<- file.path(latexDir, paste0(plotNamePrefix, "CHM1_MS.pdf") )
+
+pdf(file=qqplotFile, width=12, height=6, title=plotTitle)
+par(mai=c(0.8,0.8,0.2,0.1), mfrow=c(1,2), 
+    cex.main=1.2^2,cex.lab=1.2, 
+    omi=c(0,0,0,0) )
+
+
+## simple multinomial (no bias)
+plotName<- "Multinomial"
+fileExpectedFreq <- paste0(getwd(), "/", subName, "_", gsub(" ", "_", plotName), "_expectedFreq.RData")
+
+if ( file.exists(fileExpectedFreq) && loadData ){
+    load(fileExpectedFreq)
+} else{
+    warning(paste("File doesn't exist:", fileExpectedFreq))
+}
+plotqq(expFreq, freqDataRef, "" )
+
+
+## dirichlet-multinomial mixture
+for( m in which(whichIsP)[1:2] ) {
+
+    plotName<- paste0("Mixture of Dirichlet Multinomial ", header[m])
+    if(m==3){
+        plotName<- gsub(" 1 components", "", plotName)
+        plotName<- gsub("Mixture of ", "", plotName)
+    }
+    fileExpectedFreq <- paste0(getwd(), "/", subName, "_", gsub(" ", "_", plotName), "_expectedFreq.RData")
+    if ( file.exists(fileExpectedFreq) && loadData ){
+        load(fileExpectedFreq)
+    } else{
+        warning(paste("File doesn't exist:", fileExpectedFreq))
+    }
+
+    plotqq(expFreq, freqDataRef, "")
+}
+
+dev.off()
+embedFonts(qqplotFile, options="-DPDFSETTINGS=/prepress")
 
