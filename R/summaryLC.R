@@ -68,6 +68,9 @@ if(isCEU){
 setwd(pwd)
 
 
+BICIndexList<- c(2,2,2,2,2,2,2,3)*2 #TH
+
+
 lc21<- read.table(paste0(lcDir, "lc_chr21.bed"), header=F)
 lc10<- read.table(paste0(lcDir, "lc_chr10.bed"), header=F)    
 lcRegionList<- list("21"=lc21, "10"=lc10)
@@ -82,12 +85,12 @@ is.between <- function(x, a, b) {
 
 lcrResultFileName<- paste0(latexDir, "LowComp_", projectName, ".tex")
 prefix<- paste0("\\begin{tabular}{|cc|ccc|c|}
-    \\hline 
-    Dataset & & Not CNV & CNV & CNV proportion & p-value \\\\ \\hline")
+    \\hline
+    Dataset & & Not LCR & LCR & LCR proportion & p-value \\\\ \\hline")
 sufix<- "\\end{tabular}"
     
 
-cat(prefix, file=lcResultFileName, fill=TRUE)
+cat(prefix, file=lcrResultFileName, fill=TRUE)
 for(p in length(subNameList):1 ){
 
 subName<- subNameList[p]
@@ -177,7 +180,7 @@ lcMajorMinorResultFileName<- paste0(latexDir, "LowComp_MajorMinorCat_", projectN
 
 prefix<- paste0("\\begin{tabular}{|c|ccc|ccc|c|}
     \\hline 
-    Dataset & FH & TH & FH proportion & Not CNV & CNV & CNV proportion & p-value \\\\ \\hline")
+    Dataset & FH & TH & FH proportion & Not LC & LC & LC proportion & p-value \\\\ \\hline")
 
 sufix<- "\\end{tabular}"
     
@@ -214,7 +217,7 @@ if ( file.exists(fileMaxLikelihoodTabel) && loadData ){
     load(fileMaxLikelihoodTabel)
 } 
 
-mlMaxIndex<- apply(maxLikelihoodTable[[BICIndex]], 1, which.max) 
+mlMaxIndex<- apply(maxLikelihoodTable[[BICIndexList[p]]], 1, which.max) 
 maxComp<- which.max(table(mlMaxIndex))
 predIndex<- (mlMaxIndex==maxComp)
 
@@ -249,8 +252,8 @@ MinorCount_T<- sum(minorTF)
 MinorCount_F<- sum(!minorTF)
 # cat(table(minorTF), formatC(MinorCount_T/length(minorTF)), "\n")
 
-combinedCnvCount<- matrix(c(table(majorTF), table(minorTF)), nrow=2, byrow=T)
-r<- fisher.test(combinedCnvCount)
+combinedLcCount<- matrix(c(table(majorTF), table(minorTF)), nrow=2, byrow=T)
+r<- fisher.test(combinedLcCount)
 
 formatString<- paste0(
     paste(fullTitle, paste(predMajorResult, collapse=" & "), 

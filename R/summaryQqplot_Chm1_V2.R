@@ -38,11 +38,11 @@ latexDir<- "/home/steven/Postdoc2/Project_MDM/DiriMulti/"
 # }
 setwd(pwd)
 
+p<-2
 
 
 plotNamePrefix<- "qqPlotsV2_"
 numRep<- 100
-
 
 
 for(p in 1:length(subNameList) ){
@@ -93,6 +93,7 @@ qqplotFile<- file.path(latexDir, plotTitle)
 pdf(file=qqplotFile, width=12, height=6, title=plotTitle)
 par(mai=c(0.8,0.8,0.2,0.1), mfrow=c(1,2), 
     cex.main=1.2^2,cex.lab=1.2, 
+    pty="s",
     omi=c(0,0,0.5,0) )
 
 
@@ -143,7 +144,7 @@ for( m in which(whichIsP) ) {
 
 dev.off()
 embedFonts(qqplotFile, options="-DPDFSETTINGS=/prepress")
-} # match (p in 1:length(subNameList) ){
+} # match (p in 1:length(subNameList) )
 
 
 
@@ -158,6 +159,7 @@ qqplotFile<- file.path(latexDir, paste0(plotNamePrefix, "CHM1_MS.pdf") )
 pdf(file=qqplotFile, width=12, height=6, title=plotTitle)
 par(mai=c(0.8,0.8,0.2,0.1), mfrow=c(1,2), 
     cex.main=1.2^2,cex.lab=1.2, 
+    pty="s",
     omi=c(0,0,0,0) )
 
 

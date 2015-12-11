@@ -79,6 +79,7 @@ qqplotFile<- file.path(latexDir, paste0(plotNamePrefix, subName, ".pdf") )
 pdf(file=qqplotFile, width=15, height=6, title=qqplotFile)
 par(mai=c(0.6,0.7,0.2,0.1), mfrow=c(1,3), 
     cex.main=1.2^4,cex.lab=1.2^2, 
+    pty="s",
     omi=c(0,0,0.5,0) )
 
 # mains = c("Reference Allele", "Alternate Allele", "Error")
@@ -160,6 +161,7 @@ qqplotFile<- file.path(latexDir, paste0(plotNamePrefix, "CEU_MS.pdf") )
 pdf(file=qqplotFile, width=15, height=6, title=qqplotFile)
 par(mai=c(0.6,0.7,0.2,0.1), mfrow=c(1,3), 
     cex.main=1.2^4,cex.lab=1.2^2, 
+    pty="s",
     omi=c(0,0,0,0) )
 
 ## simple multinomial (no bias)

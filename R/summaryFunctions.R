@@ -204,29 +204,49 @@ parseDataIndex<- function(dat, index, lowerLimit, upperLimit){
     return(dataRef)
 }
 	
+roundToNr<- function(value, near, crf=0){ #ceiling,round,floor(>0,==0,<0)
+    # round(a/b)*b
+    if(crf >0){
+        return( round((near/2+value)/near)*near )
+    } else if(crf==0) {
+        return( round(value/near)*near )
+    } else if(crf<0){
+        return( round((value-near/2)/near)*near )
+    }
+}
+# seq(0.3,0.9,by=0.1)
+# roundToNr(seq(0.3,0.9,by=0.1), 0.4, -1)
+# roundToNr(seq(0.3,0.9,by=0.1), 0.4, 0)
+# roundToNr(seq(0.3,0.9,by=0.1), 0.4, 1)
 
-plotqq<- function(z, ff, outerText, xlim=c(0,1),ylim=c(0,1)){
+
+
+plotqq<- function(z, ff, outerText, xlim=c(0,1),ylim=c(0,1), asp=1, ...){
     numCat<- NCOL(z)
     if(numCat==3){
-        mains = c("Reference Allele", "Alternate Allele", "Error")
+        mains <- c("Reference Allele", "Alternate Allele", "Error")
+        lim3<- c(0, roundToNr(max(ff[,3]), 0.1, 1) )
+        lim<- c(0,1)
+        limList <- list(lim, lim, lim3)
     } else {
-        mains = c("Reference Allele", "Error")
-#         z[,1], ff[,1]
+        mains <- c("Reference Allele", "Error")
+        lim1<- c(roundToNr(min(ff[,1], z[,1]), 0.05, -1), 1)
+        lim2<- c(0, roundToNr(max(ff[,2], z[,2]), 0.05, 1))
+        limList <- list(lim1, lim2)
     }
 
     for(i in 1:numCat) {
-        qqplot(z[,i],ff[,i],,xlab="Estimated Frequency",ylab="Observed Frequency",main=mains[i], xlim=xlim, ylim=ylim)
+        qqplot(z[,i],ff[,i],,xlab="Estimated Frequency",ylab="Observed Frequency",main=mains[i], xlim=limList[[i]], ylim=limList[[i]], asp=asp, ...)
         abline(0,1)
-    #   print(ad.stat.k(ff[,i],z[,i]))
+#        print(ad.stat.k(ff[,i],z[,i]))
         if(i==1 & numCat==2){
-        
             count11<- sum(z[,1]==1 & ff[,1]==1) / NROW(z)
             legend(0.1, 1, paste0("Proportion of sites at (1,1)= ", formatC(count11)) )
         }
     }
     mtext(outerText, side=3, outer=T, line=0.5, cex=2)
-
 }
+plotqq(expFreq, freqDataRef, paste0(plotName, " ", subName2) )
 
 
 collapseSortMean<- function(data, ncol){
