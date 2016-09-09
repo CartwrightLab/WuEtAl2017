@@ -1,14 +1,11 @@
 #!/usr/bin/env bash
-
-#base_counts_hets_CEU10_878_byref_flag_filtered.txt       base_counts_homos_ref_CEU10_878_byref_flag_filtered.txt
-#base_counts_homos_alt_CEU10_878_byref_flag_filtered.txt
-
-# ln -sf /home/steven/Project_MDM/MiDiMu/R/run_gt_mdm.sh .
+## Run EM on files with the following pattern *hets*byref*
+## e.g. base_counts_hets_CEU10_878_byref_flag_filtered.txt       
 
 numTrial=1000
 
-MdmFile="/home/steven/Project_MDM/MiDiMu/R/mdm.R"
-GtMdm="/home/steven/Project_MDM/MiDiMu/R/search-gt-mdm.R"
+MdmFile="./mdm.R"
+GtMdm="./search_gt_mdm.R"
 
 #if [ -h $0 ]
 #then

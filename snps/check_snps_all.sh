@@ -1,17 +1,14 @@
 #!/bin/sh
-
+refGenome="/storage/reference_genomes/human/1k_genomes_phase1/human_g1k_v37.fasta"
 chromosome=$1
 line=$2     #range in chromosome
 isOriginalCaller=$3
 outfileDir=$4
 
-#echo "$1 $2 $3 $4"
 set -- $line
 startpos=$1
 endpos=$2
 infile=($3$4 $3$5 $3$6) #child parent1 parent2
-#echo "$endpos $startpos"
-#echo "$1 $2 $3 $4"
 
 if $isOriginalCaller; then
   mode="-c" #-c, --consensus-caller	bcftools
@@ -26,18 +23,14 @@ if [[ $2 -gt $startpos ]];then    #get last position tested
 #    echo "reset $startpos to $2+1 END:$endpos"
     startpos=$(($2+1)) #start with +1 position, got result from this position already
     outfile="${outfileDir}${startpos}_single.vcf"
-#else
-#echo "Skip S1"
+
 fi
 
 if [ $endpos -gt $startpos ];then
-  ( samtools mpileup -t SP -u -r ${chromosome}:${startpos}-${endpos} -f /storage/reference_genomes/human/1k_genomes_phase1/human_g1k_v37.fasta ${infile[0]} | bcftools call ${mode} -> ${outfile} )      #note starting new file
-#else
-#echo "Skip S2"
+  ( samtools mpileup -t SP -u -r ${chromosome}:${startpos}-${endpos} -f ${refGenome} ${infile[0]} | bcftools call ${mode} -> ${outfile} )      #note starting new file
 fi
 
-##orig
-#( samtools mpileup -uD -r 21:${startpos}-${endpos} -f /storage/b37_reference/human_g1k_v37.fasta /storage/CEUTrio/CEUTrio.HiSeq.WGS.b37_decoy.NA12878.clean.dedup.recal.bam | bcftools view -cg -> ${startpos}_878.vcf )      #note starting new file
+
 
 #  samtools mpileup -t SP -u -r 21:${startpos}-${endpos} -f /storage/b37_reference/human_g1k_v37.fasta /storage/yri_trio/NA19240.chrom21.ILLUMINA.bwa.YRI.high_coverage.20100311.bam /storage/yri_trio/NA19238.chrom21.ILLUMINA.bwa.YRI.high_coverage.20100311.bam /storage/yri_trio/NA19239.chrom21.ILLUMINA.bwa.YRI.high_coverage.20100311.bam | bcftools call -c -C trio -S trio_config_yri.txt -> ${startpos}.vcf )
 

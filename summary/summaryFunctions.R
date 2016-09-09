@@ -219,34 +219,38 @@ roundToNr<- function(value, near, crf=0){ #ceiling,round,floor(>0,==0,<0)
 # roundToNr(seq(0.3,0.9,by=0.1), 0.4, 0)
 # roundToNr(seq(0.3,0.9,by=0.1), 0.4, 1)
 
+pruneQQ <- function(x,y) {
+    W = 10000
+    x = sort(x)
+    y = sort(y)
+    x = round(x*W)/W
+    y = round(y*W)/W
+    m = matrix(c(x,y),ncol=2)
+    unique(m)
+}
 
-
-plotqq<- function(z, ff, outerText, xlim=c(0,1),ylim=c(0,1), asp=1, ...){
+plotqq<- function(z, ff, outerText, xlim=c(0,1),ylim=c(0,1), ...){
     numCat<- NCOL(z)
     if(numCat==3){
-        mains <- c("Reference Allele", "Alternate Allele", "Error")
+        mains <- c("Reference", "Alternate", "Error")
         lim3<- c(0, roundToNr(max(ff[,3]), 0.1, 1) )
         lim<- c(0,1)
         limList <- list(lim, lim, lim3)
     } else {
-        mains <- c("Reference Allele", "Error")
+        mains <- c("Reference", "Error")
         lim1<- c(roundToNr(min(ff[,1], z[,1]), 0.05, -1), 1)
         lim2<- c(0, roundToNr(max(ff[,2], z[,2]), 0.05, 1))
         limList <- list(lim1, lim2)
     }
 
     for(i in 1:numCat) {
-        qqplot(z[,i],ff[,i],,xlab="Estimated Frequency",ylab="Observed Frequency",main=mains[i], xlim=limList[[i]], ylim=limList[[i]], asp=asp, ...)
+        xy = pruneQQ(z[,i],ff[,i])
+        plot(xy,xlim=limList[[i]],ylim=limList[[i]],...)
         abline(0,1)
-#        print(ad.stat.k(ff[,i],z[,i]))
-        if(i==1 & numCat==2){
-            count11<- sum(z[,1]==1 & ff[,1]==1) / NROW(z)
-            legend(0.1, 1, paste0("Proportion of sites at (1,1)= ", formatC(count11)) )
-        }
+        usr <- par( "usr" )
+        text(usr[1],usr[4],mains[i],adj=c(-0.1,1.3),cex=1.2^2,font=1)
     }
-    mtext(outerText, side=3, outer=T, line=0.5, cex=2)
 }
-plotqq(expFreq, freqDataRef, paste0(plotName, " ", subName2) )
 
 
 collapseSortMean<- function(data, ncol){
@@ -258,6 +262,11 @@ collapseSortMean<- function(data, ncol){
 
     })
     return(result)
+}
+
+
+is.between <- function(x, a, b) {
+    ( (x - a)  *  (b - x) ) >= 0
 }
 
 
@@ -366,6 +375,77 @@ mdmSingleLogLikeCore <- function(s,params) {
 }
 
 
+loadRawData<- function(fullPath, isCEU, lowerLimit, upperLimit, dirtyData){
+    ## load raw data
+    if(isCEU){
+        hets_byref<- list.files(path=fullPath, pattern="hets.+byref") 
+    } else{
+        hets_byref<- file.path("base_count_meta_subsample") 
+    }
+    dataFull <- read.delim(file.path(fullPath, hets_byref), header=TRUE)
+    dataRef<- parseData(dataFull, lowerLimit, upperLimit, dirtyData, isCEU=isCEU)
+    dataRefDirty<- parseData(dataFull, lowerLimit, upperLimit, dirtyData=TRUE, isCEU=isCEU)
+    
+    return(list(dataFull=dataFull, dataRef=dataRef, dataRefDirty=dataRefDirty) )
+}
+
+
+loadMaxModel <- function(fullPath, subName, loadData, isCEU, isRscriptMode){
+    ## load maximum likelihood model. Try to calculate it if runs under local mode.
+    fileMaxModelOnly <- file.path(fullPath, paste0(subName, "_maxModelOnly.RData"))
+    if ( file.exists(fileMaxModelOnly) && loadData ){
+        load(fileMaxModelOnly)
+    } else if (!isRscriptMode){
+        if(isCEU){## TODO: Where should we keep the raw data
+            pwd <- "/home/steven/Postdoc2/Project_MDM/CEU/"
+        } else {
+            pwd <- "/home/steven/Postdoc2/Project_MDM/CHM1/"
+        }
+        subFolders <- paste0(subName, "/original/base_count/")
+        deepPath <- file.path(pwd, subFolders)
+        if( file.exists(deepPath)){
+            maxModel<- extractMaxModel(deepPath, isCEU)
+            save(maxModel, file=fileMaxModelOnly)
+        }
+        else{
+            stop("Can't locate raw EM results and extract ML models.")
+        }
+    }
+    else {
+        stop(paste("Maximum likelihood model can NOT be loaded or calculated. Check ", fileMaxModelOnly))
+    }
+    return(maxModel)
+    
+}
+
+
+loadMaxLikelihoodTable<- function(fullPath, subName, loadData, maxModel, dataFull, lowerLimit, upperLimit, isCEU, isRscriptMode){
+    ## load max likelihood table
+    fileMaxLikelihoodTabel <- file.path(fullPath,paste0(subName, "_maxLikelihoodTableFull.RData") )
+    if ( file.exists(fileMaxLikelihoodTabel) && loadData ){
+        load(fileMaxLikelihoodTabel)
+    } else if (!isRscriptMode){
+        maxLikelihoodTable<- calculateEachLikelihood(maxModel, dataFull, lowerLimit=lowerLimit, upperLimit=upperLimit, isCEU=isCEU)
+        attr(maxLikelihoodTable, "title")<- subName
+        save(maxLikelihoodTable, file=fileMaxLikelihoodTabel)
+    }
+    else{
+        stop(paste("Maximum likelihood table can NOT be loaded or calculated. Check ", fileMaxLikelihoodTabel))    
+    }
+    return(maxLikelihoodTable)       
+}
+
+checkBetweenEachRegion <- function(data, region){
+    tf<- sapply(data, function(x){
+        if( any((x >= region[,1] & x <= region[,2]  ))  ){
+            return(TRUE)
+        }
+        return(FALSE)
+    })
+    return(tf)
+}
+
+################################################################################
 ## copied from mdm.R
 
 # generate a random sample of DM observations
