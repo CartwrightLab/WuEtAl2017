@@ -31,6 +31,7 @@ mixture of dirichlet-multinomials (MDM) models from counts-by-ref file generated
 - `numComponent`: The number of components in the MDM model. A suffix 'p' or "P" can be appended to the number, which will use an alternative filtering process (See **Note** below).
 - `countsByRefFile`: Counts-by-ref file generated from the python script `get_base_counts_trio.py`
 - The default read count filter is 10 and 150. This can be change by
+
   ```R
   upperLimit <- 150
   lowerLimit <- 10
