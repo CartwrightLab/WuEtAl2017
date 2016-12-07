@@ -1,7 +1,7 @@
 #! /usr/bin/Rscript --vanilla
 # filetype=R
 
-# Rscript search-gt-mdm.R ${numTrial} ${numCom}${isDirty} $file 
+# Rscript search_em_mdm_single.R ${numTrial} ${numCom}${isDirty} $file
 traceLevel <- 0
 upperLimit <- 150
 lowerLimit <- 10
@@ -20,7 +20,7 @@ getScriptPath <- function(){
 
 
 script.dir = getScriptPath()
-suppressPackageStartupMessages(source( file.path(script.dir,"mdm.R") )) 
+suppressPackageStartupMessages(source( file.path(script.dir,"mdm.R") ))
 options(warn=1)
 
 fitmdm.mle.many <- function(x,n,k) {
@@ -35,7 +35,7 @@ fitmdm.mle.many <- function(x,n,k) {
 		}
 	}
 	fiv <- rdirichlet(k*n,10*am)
-	
+
 	res <- list()
 	m <- -.Machine$double.xmax
 	for(i in 1:n) {
@@ -44,11 +44,11 @@ fitmdm.mle.many <- function(x,n,k) {
 		a <- fiv[seq(k*(i-1)+1,k*i),,drop=FALSE]*(1-od)/od
 
 		a <- a[order(rowSums(a)),]
-		
+
 		if(k == 1) {
 			f <- 1
 		}
-		
+
 		u <- try(mdm(x,f,a,phTol=150,cycles=1000,cyclesInner=200,
 				phAcc=40,traceLevel=traceLevel,fixStart=FALSE))
 		if(inherits(u, "try-error")) {
@@ -70,23 +70,22 @@ args <- commandArgs(trailingOnly=TRUE)
 dirty_data <- FALSE
 
 if(length(args) < 3) {
-	message("  Usage: search-gt-mdm (num of trials) (num of compoents[d]) (data file).")
-	message("  To do a search using dirty data, append 'd' to the number of components.")
+	message("  Usage: search_em_mdm_single (num of trials) (num of compoents) (data file).")
 	quit(status=1)
 }
 
 nn <- as.numeric(args[1])
 k <- args[2]
-dirty_data <- grepl("^\\d+[Dd]$",k)
-if(dirty_data) {
-	k <- as.numeric(sub("[Dd]$","",k))
-} else {
-	k <- as.numeric(k)
-}
+# dirty_data <- grepl("^\\d+[Dd]$",k)
+# if(dirty_data) {
+# 	k <- as.numeric(sub("[Dd]$","",k))
+# } else {
+# 	k <- as.numeric(k)
+# }
 
 dat <- read.delim(args[3],header=TRUE)
 
-sub_name <- gsub("base_counts_(.*_[CEU|CHM1].*)_878_byref_.*txt","\\1" ,args[3])
+sub_name <- gsub("counts_(.*)_byref.*txt","\\1" ,args[3])
 if(sub_name == args[3]){
 	message("Can't find the pattern: ", sub_name)
 	sub_name <- ""
@@ -96,9 +95,11 @@ if(sub_name == args[3]){
 x <- cbind(dat$refs,dat$alts,dat$e1s+dat$e2s)
 x <- data.matrix(x)
 row.names(x) <- dat$pos
-x <- x[dat$callby == 2 & ((dat$snp == 1 & dat$snpdif == 0) | dirty_data), ]
+# x <- x[dat$callby == 1 & ((dat$snp == 1 & dat$snpdif == 0) | dirty_data), ]
 n <- rowSums(x)
-oo <- lowerLimit <= n & n <= upperLimit
+propRef <- x[,1]/n
+oo <- lowerLimit <= n & n <= upperLimit & propRef > 0.8
+# oo <- lowerLimit <= n & n <= upperLimit
 x <- x[oo,]
 n <- n[oo]
 
@@ -106,14 +107,14 @@ message(sprintf("Searching for maximum likelihood of %d-component model....",k))
 message(sprintf("Using%s data with %dx to %dx coverage....",
 	(if(dirty_data) " dirty" else ""), lowerLimit, upperLimit))
 
-ofile <- sprintf(  
-	"gt_mdm_%s_%d%s_results_%d.RData",sub_name, k, if(dirty_data) "D" else "", pid)
+ofile <- sprintf("em_mdm_single_%s_%d_results_%d.RData",
+                sub_name, k, pid)
 
 res <- fitmdm.mle.many(x,nn,k)
 ll <- sapply(res,function(x) x$ll)
 
 resName <- sprintf("res_%d", pid)
-resNameK <- sprintf((if(dirty_data) "resK_%dd" else 
+resNameK <- sprintf((if(dirty_data) "resK_%dd" else
 	"resK_%d"),k,pid)
 
 res <- res[rev(order(ll))]
@@ -124,4 +125,3 @@ assign(resNameK,resName)
 cat("Saving results to", ofile, "...\n")
 
 save(list=c("resName",resName,resNameK),file=ofile)
-
