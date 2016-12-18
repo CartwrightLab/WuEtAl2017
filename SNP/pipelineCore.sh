@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
 ### Requirement
 # - [Samtools](http://www.htslib.org/) version 1.2 or later
 # - [BCFtools](http://www.htslib.org/) version 1.2 or later

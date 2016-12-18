@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
 ## Check program and parameters
 ## Check the availability of samtools, brftools, and parallel
 ## If parallel is installed, run it with ${parallelCount} jobs
