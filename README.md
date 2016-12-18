@@ -182,12 +182,12 @@ Call heterozygous sites using `Samtools` and `BCFtools`. Filter the results and 
 ### Example
 ```bash
 #setup example files
-cd WuEtAl2016/SNP/example
+cd WuEtAl2016/SNP/data
 tar -xzf example.tar.gz
-setupCEU13.sh
+./setupCEU13.sh
 #Run example dataset
-cd WuEtAl2016/SNP/
-pipelineCore.sh
+cd ..
+./pipelineCore.sh
 ```
 The expected output should be someting like the following
 ```

@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
 # Call SNP for trio or a single individual using Samtools and BCFtools
 ### Requirement
 # - [Samtools](http://www.htslib.org/) version 1.2 or later
