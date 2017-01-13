@@ -33,7 +33,7 @@ BICIndexList<- c(2,2,2,2,2,2,2,3)*2
 
 
 if(isCEU){
-    dataDir<- "../data/CEU/"
+    dataDir<- "../SNP/data/CEU13_example_C21/"
     subNameList<- c(
         "CEU10_C10", "CEU10_C21",
         "CEU11_C10", "CEU11_C21",
@@ -56,7 +56,7 @@ if(isCEU){
     projectName<- "CEU"
     
 } else {
-    dataDir<- "../data/CHM1/"
+    dataDir<- "../data_dir_for_CHM1/"
     subNameList<- c(
         "CHM1_C10", "CHM1_C21"
     )
