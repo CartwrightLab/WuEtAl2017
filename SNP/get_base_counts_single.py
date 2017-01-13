@@ -26,6 +26,14 @@ def summary_info(info):
         return s
 
 #################################
+# Python 2.6 doesn't have .major .minor
+if sys.version_info[0] == 3:
+    raise SystemError("Python 3.x is not supported")
+
+if sys.version_info[1] < 7:
+    raise SystemError("Must be using Python 2.7 or greater")
+
+
 PREFIX_HET="0/1:"
 PREFIX_HOMO_ALT="1/1:"
 

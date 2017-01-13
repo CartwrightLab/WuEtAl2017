@@ -20,9 +20,9 @@ rdm <- function(n, m, phi, p=NULL) {
 	}
 	params[params[,1] < .Machine$double.eps/2,1] <- .Machine$double.eps/2
 	p <- params[,-1,drop=FALSE]
-	
+
 	alphas <- mdmAlphas(params)
-	# choose initial 
+	# choose initial
 	y <- rmultinomial(n,1,p)
 	# update params, conditional on what has occurred
 	ny <- nrow(y)
@@ -39,7 +39,7 @@ rdm <- function(n, m, phi, p=NULL) {
 		a <- y + alphas
 	}
 	# choose following
-	y+rmultinomial(n,m-1,rdirichlet(n,a))	
+	y+rmultinomial(n,m-1,rdirichlet(n,a))
 }
 
 # generate a random sample of mixture of DM distributions
@@ -55,7 +55,7 @@ rmdm <- function(n, m, f, phi, p=NULL) {
 	if(length(f) != k) {
 		stop("The length of 'f' and number of rows in params must be equal.")
 	}
-	
+
 	# generate the mixture
 	q <- rmultinomial(1, n, f)
 	mix <- rep.int(seq_len(k), q)
@@ -106,7 +106,7 @@ mdmParams <- function(phi, p=NULL) {
 		}
 		A <- rowSums(a)
 		phi <- 1.0/(A+1.0)
-		p <- a/A		
+		p <- a/A
 	}
 
 	colnames(p) <- paste("p", seq_len(ncol(p)),sep="")
@@ -132,7 +132,7 @@ mdmSingleMoments <- function(x,w=rep(1, nrow(x)),pseudoCounts=FALSE) {
 	y <- colSums(x)
 	oo <- (y > 0)
 	x <- x[,oo]
-		
+
 	# remove rows that have no size
 	n <- rowSums(x)
 	x <- x[n>0,]
@@ -151,7 +151,7 @@ mdmSingleMoments <- function(x,w=rep(1, nrow(x)),pseudoCounts=FALSE) {
 	if(phi <= 0.0) {
 		phi <- 1/(sum(w*n)+1)
 	} else if( phi >= 1.0) {
-		phi <- 1-1/(sum(w*n)+1)	
+		phi <- 1-1/(sum(w*n)+1)
 	}
 	pp <- vector("numeric",length(oo))
 	pp[oo] <- p
@@ -165,22 +165,22 @@ mdmMoments <- function(x,M=1L,w=rep(1, nrow(x)),pseudoCounts=FALSE,nstart=1) {
 		stop("Parameter M must be a positive integer.")
 	}
 	M <- as.integer(M)
-	
+
 	# remove rows with no data
 	x <- as.matrix(x)
 	# apply the weights, assumes integer values
 	x <- x[rep(1:nrow(x),w),]
-	
+
 	rownames(x) <- NULL
 	n <- rowSums(x)
 	x <- x[n>0,]
 	n <- n[n>0]
 	q <- x/n
-		
+
 	# calculate a kmeans clustering
 	# this can vary between runs, so try 10 different starts
 	ret <- kmeans(q,M,nstart=nstart)
-	
+
 	s <- split(data.frame(x),ret$cluster)
 	f <- ret$size/nrow(x)
 	params <- t(sapply(s,mdmSingleMoments))
@@ -196,12 +196,12 @@ mdmMoments <- function(x,M=1L,w=rep(1, nrow(x)),pseudoCounts=FALSE,nstart=1) {
 mdmTabulateWeights <- function(bin,w=NULL,nbins= max(1L, bin, na.rm = TRUE)) {
     if (!is.numeric(bin) && !is.factor(bin))
         stop("'bin' must be numeric or a factor")
-    if (typeof(bin) != "integer") 
+    if (typeof(bin) != "integer")
         bin <- as.integer(bin)
-    if (nbins > .Machine$integer.max) 
+    if (nbins > .Machine$integer.max)
         stop("attempt to make a table with >= 2^31 elements")
     nbins <- as.integer(nbins)
-    if (is.na(nbins)) 
+    if (is.na(nbins))
         stop("invalid value of 'nbins'")
 	if(is.null(w)) {
 		u <- .Internal(tabulate(bin, nbins))
@@ -221,11 +221,11 @@ mdmAugmentData <- function(x,w=NULL) {
 	x <- x[,oo]
 	n <- rowSums(x)
 	r <- cbind(x,n,deparse.level=0)
-	
+
 	int <- do.call("interaction", c(unclass(as.data.frame(x)),drop=TRUE))
 	y <- r[match(levels(int),int),]
 	w <- mdmTabulateWeights(int,w)
-	
+
 	list(r=r,y=y,w=w,mask=oo)
 }
 
@@ -264,20 +264,20 @@ mdmSingleCore <- function(s,params,phTol,cycles,phAcc,traceLevel=0) {
 	#   http://www.jstor.org/stable/2347605
 	x2.stop <- qchisq(logTol,K,log.p=TRUE)
 	x2.acc  <- qchisq(logAcc,K,log.p=TRUE,lower.tail=FALSE)
-	
+
 	if(traceLevel >= 2) message("Fitting dirichlet-multinomial:")
 
 	# vectorization is easier if we transpose s
 	ss <- s
 	s <- t(s)
 	j <- rep(0:(N-1), each=KK)
-	
+
 	# TODO: check to see if data fits phi=1
-	
+
 	ll2  <- -.Machine$double.xmax
 	ll   <- -.Machine$double.xmax
 	lln <- mdmSingleLogLikeCore(ss,params)
-	
+
 	nparams <- params
 	for(cyc in 1:cycles) {
 		params <- nparams
@@ -289,13 +289,13 @@ mdmSingleCore <- function(s,params,phTol,cycles,phAcc,traceLevel=0) {
 		ll <- lln
 		phi <- params[1]
 		p <- c(params[-1],1)
-		
+
 		# calculate gradient
 		gf <- rowSums(s*(j-p)/(p+phi*(j-p)))
 		gg <- rowSums(s/(p+phi*(j-p)))*(1.0-phi)
 		gp <- gg[1:(K-1)]-gg[K]
 		g <- c(sum(gf[-KK])-gf[KK], gp)
-		
+
 		# calculate hessian
 		hh <- -rowSums(s/(p+phi*(j-p))^2)*(1.0-phi)^2
 		h <- matrix(0,K,K)
@@ -305,15 +305,15 @@ mdmSingleCore <- function(s,params,phTol,cycles,phAcc,traceLevel=0) {
 		h[1,2:K] <- h[2:K,1]
 		hh <- -rowSums(s*(j-p)^2/(p+phi*(j-p))^2)
 		h[1,1] <- sum(hh[-KK])-hh[KK]
-		
+
 		# invert hessian, use pseudo-inverse incase it is singlular
 		# TODO: determine if we can calculate the inverse directly
 		# TODO: Woodbury matrix identity and block matrices
 		ih <- ginv(-h)
-				
+
 		# calculate delta
 		delta <- ih %*% g
-		
+
 		#delta <- solve(-h,g)
 
 		# Test For Convergence
@@ -324,7 +324,7 @@ mdmSingleCore <- function(s,params,phTol,cycles,phAcc,traceLevel=0) {
 		if(phi == 0.0 && g[1] < 0.0) {
 			gAdj[1] <- 0.0
 		}
-		
+
 		# this statistic is approximately chi-square distributed
 		# so we can stop when it is statistically near enough to 0
 		x2 <- t(gAdj) %*% ih %*% gAdj
@@ -338,7 +338,7 @@ mdmSingleCore <- function(s,params,phTol,cycles,phAcc,traceLevel=0) {
 		lln <- mdmSingleLogLikeCore(ss,nparams)
 		# if we overshoot, use an alternative search
 		if(ll > lln) {
-			# Use a simple fixed-point search to update p 
+			# Use a simple fixed-point search to update p
 			np <- p[-KK]*gg[-KK]
 			np <- np/sum(np)
 
@@ -351,7 +351,7 @@ mdmSingleCore <- function(s,params,phTol,cycles,phAcc,traceLevel=0) {
 			f1 <- g[1]
 			f2 <- h[1,1]
 			fpp <- f2*(1-phi)*phi
-			
+
 			if((f2 >= 0.0 && fpp >= f1) || (f2 <= 0.0 && fpp <= f1)) {
 				b <- f2*(1-phi)^2
 				a <- -f1+fpp
@@ -365,9 +365,9 @@ mdmSingleCore <- function(s,params,phTol,cycles,phAcc,traceLevel=0) {
 			} else {
 				nphi <- phi
 			}
-						
+
 			nparams <- c(nphi, np)
-			
+
 			lln <- mdmSingleLogLikeCore(ss,nparams)
 			if(ll > lln) {
 				# For badly fitting data, the above approximation can fail.
@@ -375,7 +375,7 @@ mdmSingleCore <- function(s,params,phTol,cycles,phAcc,traceLevel=0) {
 				# Try a simple Aitken accelleration procedure
 				z <- rowSums(s)
 				u <- z*phi-phi^2*gf
-				
+
 				nphi0 <- phi*u[KK]/(sum(u[-KK])-phi*(sum(u[-KK])-u[KK]))
 				gf <- rowSums(s*(j-p)/(p+nphi0*(j-p)))
 				u <- z*nphi0-nphi0^2*gf
@@ -383,16 +383,16 @@ mdmSingleCore <- function(s,params,phTol,cycles,phAcc,traceLevel=0) {
 				gf <- rowSums(s*(j-p)/(p+nphi1*(j-p)))
 				u <- z*nphi1-nphi1^2*gf
 				nphi2 <- nphi1*u[KK]/(sum(u[-KK])-nphi1*(sum(u[-KK])-u[KK]))
-				
+
 				nphi <- nphi0-(nphi1-nphi0)^2/((nphi2-nphi1)-(nphi1-nphi0))
-				
+
 				nparams <- c(nphi, np)
 				lln <- mdmSingleLogLikeCore(ss,nparams)
 				if(ll > lln) {
 					# If Aitken accelleration has failed resort to using
 					# the first iteration of the fixed-point method.
 					nparams <- c(nphi0, np)
-					lln <- mdmSingleLogLikeCore(ss,nparams)					
+					lln <- mdmSingleLogLikeCore(ss,nparams)
 				}
 			}
 		}
@@ -443,7 +443,7 @@ mdmLogLikeCore <- function(r,w,f,params) {
 	n <- r[,KK]
 	K <- KK-1
 	M <- length(f)
-	
+
 	# sanity checks
 	if(KK != ncol(params)) {
 		stop("ncol(params) != ncol(r).");
@@ -451,7 +451,7 @@ mdmLogLikeCore <- function(r,w,f,params) {
 	if(M != nrow(params)) {
 		stop("nrow(params) != length(f).");
 	}
-	
+
 	# calculate component probabilities for each row
 	pr <- matrix(0,N,M)
 	mx <- max(n)
@@ -462,7 +462,7 @@ mdmLogLikeCore <- function(r,w,f,params) {
 		if(phi == 1.0) {
 			g <- max.col(r,ties.method="first")
 			p <- c(log(f[m])+log(p),-1/0)
-			pr[,m] <- p[g]	
+			pr[,m] <- p[g]
 		} else {
 			cache <- cbind(0,matrix(log(p+phi*(j-p)),nrow=KK))
 			cache <- apply(cache,1,cumsum)
@@ -470,7 +470,7 @@ mdmLogLikeCore <- function(r,w,f,params) {
 			pr[,m] <- log(f[m])+rowSums(ww[,-KK])-ww[,KK]
 		}
 	}
-	
+
 	ww <- log(rowSums(exp(pr)))
 	pr <- pr-ww
 	list(ll = sum(w*ww), w = exp(pr))
@@ -494,7 +494,7 @@ mdmSingle <- function(x,phi=NULL,p=NULL,phTol=100,phAcc=40,cycles=1000,traceLeve
 		warning("invalid initial parameter string")
 		return(NULL)
 	}
-	
+
 	ret <- mdmSingleCore(s$s,params,phTol,cycles,phAcc,traceLevel)
 	KK <- length(ret$params)
 	K <- KK-1
@@ -503,12 +503,12 @@ mdmSingle <- function(x,phi=NULL,p=NULL,phTol=100,phAcc=40,cycles=1000,traceLeve
 	retParams <- vector("numeric",L)
 	names(retParams) <- colnames(iniParams)
 	retParams[mask] <- ret$params
-	
+
 	mask2 <- mask
 	mask2[max(which(mask))] <- FALSE
-	
+
 	freeParams <- retParams[mask2]
-	
+
 	covar <- matrix(0,L,L,dimnames=list(names(retParams),names(retParams)))
 	oo <- which(mask)
 	pos <- cbind(rep(oo,L),rep(oo,each=L))
@@ -519,17 +519,17 @@ mdmSingle <- function(x,phi=NULL,p=NULL,phTol=100,phAcc=40,cycles=1000,traceLeve
 	L <- length(oo)
 	pos <- cbind(rep(oo,L),rep(oo,each=L))
 	covar[pos] <- (A %*% cv %*% t(A))
-	
+
 	info <- ret$obsInformation
 	score <- ret$score
 	names(score) <- names(freeParams)
 	colnames(info) <- names(freeParams)
 	rownames(info) <- names(freeParams)
-	
+
 	vecParams <- retParams
 	#retParams <- t(retParams)
 	#rownames(retParams) <- "m1"
-	
+
 	list(ll=ret$ll,
 		params=vecParams,freeParams=freeParams,
 		covar=covar,obsInformation=info,
@@ -540,11 +540,11 @@ mdmSingle <- function(x,phi=NULL,p=NULL,phTol=100,phAcc=40,cycles=1000,traceLeve
 # using maximum likelihood
 mdm <- function(x,f=1L,phi=NULL,p=NULL,phTol=100,cycles=1000,
 	cyclesInner=NULL,phAcc=40,traceLevel=0L,fixStart=FALSE) {
-	
+
 	if(missing(x)) {
 		stop("x not specified.")
 	}
-	
+
 	if(length(f) == 1 && f == 1) {
 		ret <- mdmSingle(x,phi,p,phTol=phTol,
 				cycles=cycles,traceLevel=traceLevel)
@@ -574,28 +574,28 @@ mdm <- function(x,f=1L,phi=NULL,p=NULL,phTol=100,cycles=1000,
 	K <- KK-1
 	M <- length(f)
 	ndf <- M*KK-1
-	
+
 	if(M < 2) {
 		stop("f must contain two or more values.")
 	}
 	f <- f/sum(f)
 	iniF <- f
-	
+
 	x2.stop <- qchisq(logTol, ndf,log.p=TRUE)
 	x2.acc  <- qchisq(logAcc, ndf,log.p=TRUE,lower.tail=FALSE)
-	
+
 	#calculate cycles for single-model estimate
 	if(is.null(cyclesInner)) {
 		cyclesInner <- max(KK,cycles/M)
 	}
-	
+
 	#setup likelihood
 	ll   <- -.Machine$double.xmax
 	ll2  <- -.Machine$double.xmax
 	ll3  <- -.Machine$double.xmax
 	llStar  <- -.Machine$double.xmax
 	llStar2 <- -.Machine$double.xmax
-	
+
 	# a bad starting point can cause all sorts of problems
 	# use initial parameters to define components
 	# follow with method of moments
@@ -617,16 +617,16 @@ mdm <- function(x,f=1L,phi=NULL,p=NULL,phTol=100,cycles=1000,
 	for(cyc in seq_len(cycles)) {
 		params <- newParams
 		f <- newF
-		
+
 		# sometimes we need to correct for p and f being zero due to
 		# numerical precision
 		params[,-1][params[,-1] == 0.0] <- .Machine$double.eps/4
 		f[f == 0.0] <- .Machine$double.eps/4
-		
+
 		ll3 <- ll2
 		ll2 <- ll
 		ll <- w$ll
-		
+
 		if(traceLevel>0)
 			message(sprintf("\n**** Cycle %d ****",cyc))
 
@@ -643,11 +643,11 @@ mdm <- function(x,f=1L,phi=NULL,p=NULL,phTol=100,cycles=1000,
 			warning(sprintf("Cycle %d: Log-Likelihood decreased by %0.16g!",
 				cyc, ll2-ll))
 		}
-		
+
 		# E-step
 		# calculate weights
-		wsum <- colSums(r$w*w$w)		
-		
+		wsum <- colSums(r$w*w$w)
+
 		#### Calculate the Score Vector for each row
 		So <- matrix(0,NN,ndf)
 		# f params
@@ -660,7 +660,7 @@ mdm <- function(x,f=1L,phi=NULL,p=NULL,phTol=100,cycles=1000,
 		for(m in seq_len(M)) {
 			pos <- M+K*(m-1)
 			phi <- params[m,1]
-			
+
 			# phi
 			p <- c(params[m,-1],1)
 			aj <- (jKK-p)/(p+phi*(jKK-p))
@@ -672,7 +672,7 @@ mdm <- function(x,f=1L,phi=NULL,p=NULL,phTol=100,cycles=1000,
 				gg[,k] <- scoreCache[1+r$y[,k],k]
 			}
 			So[,pos] <- w$w[,m]*(rowSums(gg[,-KK])-gg[,KK])
-			
+
 			# p
 			p <- c(params[m,-1])
 			aj <- (1.0-phi)/(p+phi*(jK-p))
@@ -686,7 +686,7 @@ mdm <- function(x,f=1L,phi=NULL,p=NULL,phTol=100,cycles=1000,
 			So[,pos+(1:(K-1))] <- w$w[,m]*(gg[,-K]-gg[,K])
 		}
 		wSo <- r$w*So
-		
+
 		#### Caclulate the Observed Information Matrix
 		#### Calculate the Observed Full Data Information Matrix
 		Io <- matrix(0,ndf,ndf)
@@ -720,7 +720,7 @@ mdm <- function(x,f=1L,phi=NULL,p=NULL,phTol=100,cycles=1000,
 			p <- c(params[m,-1],1)
 			hh <- -rowSums(ss*(jKK-p)^2/(p+phi*(jKK-p))^2)
 			Bo[pos,pos] <- -sum(hh[-KK])+hh[KK]
-			
+
 			for(ki in 0:(K-1)) {
 				for(kj in 0:(K-1)) {
 					Io[pos+ki,pos+kj] <- Bo[pos+ki,pos+kj] -
@@ -738,9 +738,9 @@ mdm <- function(x,f=1L,phi=NULL,p=NULL,phTol=100,cycles=1000,
 			for(k in seq_len(K)) {
 				posJ <- M+K*(M-1)+(k-1)
 				Io[posI,posJ] <- sum(wSo[,posJ])/f[M]
-			}			
+			}
 		}
-				
+
 		# E(i)*E(j) and make symmetrical matrix
 		for(posI in seq_len(M*KK-1)) {
 			Io[posI,posI] <- Io[posI,posI] + sum(wSo[,posI]*So[,posI])
@@ -758,21 +758,21 @@ mdm <- function(x,f=1L,phi=NULL,p=NULL,phTol=100,cycles=1000,
 		Vo <- ginv(Io)
 		if(inherits(Vo, "try-error")) {
 			x2 <- -1
-		} else {		
+		} else {
 			# Sometimes phi=0 maximizes the likelihod without gradient being
 			# zero.  Detect and fix.
 			Se <- colSums(wSo)
 			gAdj <- Se
 			mZero <- which(params[,1] == 0.0 & Se[M+K*seq(0,M-1)] < 0.0)
 			gAdj[M+K*(mZero-1)] <- 0.0
-			
-			# 
+
+			#
 			x2 <- t(gAdj) %*% Vo %*% gAdj
 		}
 		if(traceLevel>0) {
 			message(sprintf("Convergence:  x2 = %0.16g", x2))
 		}
-		
+
 		# stopping criteria of Narayanan (1991)
 		#   http://www.jstor.org/stable/2347605
 		if((x2 >= 0 && x2 < x2.stop) || ll == ll2) {
@@ -790,7 +790,7 @@ mdm <- function(x,f=1L,phi=NULL,p=NULL,phTol=100,cycles=1000,
 		  	break
 		  }
 		}
-			
+
 		# Optimize parameters for each component
 		for(m in seq_len(M)) {
 			# E-Step
@@ -801,23 +801,23 @@ mdm <- function(x,f=1L,phi=NULL,p=NULL,phTol=100,cycles=1000,
 		}
 		# M-Step
 		newF <- wsum/N
-		
+
 		# Accelerate?
 		if(x2 >= 0 && x2 < x2.acc) {
 			np <- c(newF[-M],t(newParams[,-KK]))
 			op <- c(f[-M],t(params[,-KK]))
 			fp <- op + (Vo %*% Bo) %*% (np-op)
-			
+
 			newFA <- fp[seq_len(M-1)]
 			newFA <- c(newFA,1-sum(newFA))
 			newParamsA[,-KK] <- matrix(fp[-(1:(M-1))],nrow=M,ncol=K,byrow=TRUE)
 			newParamsA[,KK] <- 1.0-rowSums(newParamsA[,2:K,drop=FALSE])
-				
+
 			# Control Overshooting
 			if(any(newFA <= 0.0 | 1.0 <= newFA )) {
 				newFA <- newF
 			}
-						
+
 			for(m in seq_len(M)) {
 				if(any(newParamsA[m,] < 0.0 | 1.0 < newParamsA[m,])) {
 					newParamsA[m,] <- newParams[m,]
@@ -845,7 +845,7 @@ mdm <- function(x,f=1L,phi=NULL,p=NULL,phTol=100,cycles=1000,
 	names(retF) <- paste("m",seq_len(M),sep="")
 	retParams <- matrix(0,M,L,dimnames=list(names(retF),colnames(iniParams)))
 	retParams[,mask] <- params
-	
+
 	# construct vectors of parameters and free parameters
 	vecParams <- c(f,t(retParams))
 	names(vecParams) <- c(
@@ -853,7 +853,7 @@ mdm <- function(x,f=1L,phi=NULL,p=NULL,phTol=100,cycles=1000,
 		paste(colnames(retParams),rep(1:M,each=ncol(retParams)),sep=".")
 	)
 	freeParams <- vecParams[freeMask]
-	
+
 	# construct transition matrix for coverting freeParam covar matrix
 	U <- matrix(0,nrow=(M+M*(K+1)),ncol=(1+M*K+M-1))
 	for(m in seq_len(M-1)) {
@@ -871,17 +871,17 @@ mdm <- function(x,f=1L,phi=NULL,p=NULL,phTol=100,cycles=1000,
 	U[c(M,M+(K+1)*(1:M)),1+M*K+M-1] <- 1
 
 	# calculate covariance matrix for vecParams
-	cv <- cbind(rbind(Vo,0),0)	
+	cv <- cbind(rbind(Vo,0),0)
 	cv <- (U %*% cv %*% t(U))
 	covar <- matrix(0,length(vecParams),length(vecParams),dimnames=list(names(vecParams),names(vecParams)))
 	oo <- which(varMask)
 	L <- length(oo)
 	pos <- cbind(rep(oo,L),rep(oo,each=L))
 	covar[pos] <- cv
-	
+
 	colnames(Io) <- names(freeParams)
 	rownames(Io) <- names(freeParams)
-	
+
 	list(ll=ll,f=retF,params=retParams,
 		vecParams=vecParams,freeParams=freeParams,
 		obsInformation=Io,covar=covar, score=Se,
@@ -894,7 +894,7 @@ mdmSingleInfo <- function(x,phi,p=NULL) {
 	params <- mdmParams(phi,p)
 	# calculate alphas
 	alphas <- mdmAlphas(params,total=TRUE)
-	
+
 	x <- as.matrix(x)
 	N <- nrow(x)
 	K <- ncol(x)
@@ -902,7 +902,7 @@ mdmSingleInfo <- function(x,phi,p=NULL) {
 
 	A <- alphas[KK]
 	phi <- params[1]
-	
+
 	n <- rowSums(x)
 	nt <- tabulate(n)
 	m <- length(nt)
@@ -922,19 +922,19 @@ mdmSingleInfo <- function(x,phi,p=NULL) {
 			s[k,seq_along(ss)] <- s[k,seq_along(ss)] + ss
 		}
 	}
-	
+
 	j <- rep(seq.int(0,m-1),each=K)
 	p <- alphas[-KK]/A
-	
+
 	hm <- rowSums(s/(j+alphas[-KK])^2)
 	h <- matrix(0,K,K)
 	hh <- A*A*hm
 	h[2:K,2:K] <- (diag(hh[1:(K-1)],nrow=(K-1),ncol=(K-1))+hh[K])
-	
+
 	hh <- rowSums(s*j/(j+alphas[-KK])^2)*(A+1)^2
 	h[2:K,1] <- hh[1:(K-1)]-hh[K]
 	h[1,2:K] <- h[2:K,1]
-		
+
 	hh <- p*rowSums(s*(2*j+alphas[-KK]-p)/(alphas[-KK]+j)^2)
 	j <- seq.int(0,ncol(s)-1)
 	s <- rev(cumsum(rev(nt)))
